@@ -1,0 +1,5 @@
+(load "unit-test.lisp")
+
+(defun test-split-strings ()
+  (load "parser.lisp")
+  nil)

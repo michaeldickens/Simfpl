@@ -1,0 +1,11 @@
+(defparameter *error-fatal* 4) ; Program must terminate immediately.
+(defparameter *error-internal* 3) ; Does not produce a stack trace.
+(defparameter *error-default* 2) ; Program will not compile successfully.
+(defparameter *error-warning* 1) ; Warning only.
+
+(defparameter *stack-trace* nil)
+
+(defun compile-error (&key (message "") (precedence *error-default*))
+  (progn
+    (princ message)
+    (if (= precedence *error-fatal*) (quit))))

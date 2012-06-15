@@ -1,0 +1,307 @@
+Simfpl--Simple Integrated Mathematically-Oriented Functional Programming Language--is a dynamic, object-oriented, lazily-evaluated, functional programming language.
+
+Why?
+
+Dynamic: While static typing offers safer code and type inference can keep the type system out of your way, in practice I find static typing slows me down and dynamic typing does not lead to more errors.
+
+Object-Oriented: An object system provides great benefits, and most modern languages are object-oriented.
+
+Lazily Evaluated: Lazy evaluation is faster, more fun, and makes the compiler harder to write.
+
+Functional: When functions behave as data, programs tend to be much more flexible and concise.
+
+--Design Principles
+
+Rule of Cool: If a feature is cool, it should be included even if it has little practical use.
+
+Challenge: All else being equal, Simfpl implements the features that take the most work to write, so as to better expand my programming abilities.
+
+These unconventional principles dictate that Simfpl include lazy evaluation, functional programming, currying, and source code as data.
+
+
+***
+
+Special Object Syntax
+
+--Strings and Regular Expressions
+
+Strings can be read in two ways: "like this" or 'like this'. The two ways come from Perl. For single-quoted strings, backslashes are read as literal characters except when followed by a single quote or another backslash. For double-quoted strings, the full spectrum of escaped characters is possible. A backslash followed by an illegal escaped character will ignore the backslash.
+
+Double-quoted strings may contain code, preceded by a pound sign and surrounded in curly braces: 
+
+	>> "Three plus five is #{3 + 5}"
+	"Three plus five is 8"
+
+Such code may perform any runtime operation that could be performed outside of the string. It may NOT define classes or functions.
+
+	>> three = 3; five = 5
+	>> "Three plus five is #{three + five}"
+	"Three plus five is 8"
+
+A pound sign followed by a word will consider the word to be executable code: 
+
+	>> three = 3
+	>> "#three is my favorite number"
+	"3 is my favorite number"
+
+A pound sign may be escaped by putting two pound signs in a row.
+
+A string may also be created by writing %s[] and putting text between the brackets. This behaves like a double-quoted string.
+
+	>> %s[hello]
+	"hello"
+	
+	>> %s[hello\n]
+	"hello\n"
+
+Regular expressions may be created similarly, with %r[] or %r"": 
+
+	>> %r[abc]
+	%r"abc"
+
+In the bracket syntax, brackets may be used without escaping them because the compiler keeps track of whether the close brackets match the open brackets.
+
+	>> %r[[abc]+]
+	%r"[abc]+"
+	
+	>> %r[]]
+	Error: Unmatched close bracket.
+
+--Quote
+
+Code may be quoted with the (quote) function. Quoted code is not evaluated.
+
+	>> (3 + 5)
+	8
+	>> quote (3 + 5)
+	`(3 + 5)
+
+Code inside a quote may be evaluated with the dq (de-quote) function.
+
+	>> quote (3 + dq (4 + 1))
+	`(3 + 5)
+
+` and # act as syntactic sugar for quote and dq. For example: 
+
+	>> `(3 + #(4 + 1))
+	`(3 + 5)
+
+--Arrays and Indexing
+
+An array is defined by square brackets surrounding comma-separated elements, as in C: 
+
+	a = [ 1, 2, 3, 4 ]
+
+This compiles to (array 1 2 3 4). [...] is equivalent to %a[...].
+
+Square brackets directly after a variable may be used to access that index in the variable, as in C:
+
+	>> a[2]
+	3
+
+During preprocessing, this compiles to 
+
+	(a at 2)
+
+
+--Lists
+
+	 %l[ 1, 2, 3, 4 ]
+
+compiles to (list 1 2 3 4).
+
+The arrow (->) and the word cons act as constructors. Commas also construct lists, except that if two objects are separated by a comma, they will be put into a list and nil will be automatically added to the end.
+
+The following all evaluate to the same as above: 
+
+	1 -> 2 -> 3 -> 4 -> nil
+	1 cons 2 cons 3 cons 4 cons nil
+	1, 2, 3, 4
+	1, (2 cons (3 -> 4 cons nil))
+
+cons has standard function precedence, while comma and -> have a much lower precedence.
+
+--Hashes
+
+	%h[ "apples" -> 1, "pears" -> 0, "grapes" -> 8 ]
+
+compiles to (hash ("apples" -> 1) ("pears" -> 0) ("grapes" -> 8)).
+
+***
+
+Functions
+
+A function definition looks like this: 
+
+	def f(x, y) => { x * y }
+
+Every function is a message to an object. If the function is declared outside of a class declaration, it resides within the Global class.
+
+The body of the function must contain exactly one statement. Multiple statements may be packaged together (see "Using Multiple Statements").
+
+In fact, a function definition simply takes a lambda and applies it to the namespace. A lambda is defined like this: 
+
+	(x, y) => { x * y }
+
+One may assign a function to a variable with
+
+	my_function = (x, y) => { x * y }
+
+Function calls may adopt Lisp-style or C-style syntax: 
+
+	(Global f x y)
+
+	Global.f(x, y)
+
+The second form compiles to the first form during preprocessing.
+
+--Currying
+
+Functions may be partially applied, like so: 
+
+	>> def f(x, y) => { x * y }
+	>> foo = f 3
+	(y) => { 3 * y }
+	
+	>> foo 4
+	12
+
+--Keywords
+
+Keywords begin with a colon. Variables may not begin with a colon.
+
+right_assoc: The function is right-associative. This keyword may only be placed at the beginning of the argument list.
+
+	>> class Integer { def f(:right_assoc x) => { self - x } }
+	>> 1 - 2 - 3
+	-4
+	
+	>> (1 - 2) - 3
+	-4
+	
+	>> 1 - (2 - 3)
+	2
+	
+	>> 1 f 2 f 3
+	2
+
+quote: Passes an argument to a function without evaluating it.
+
+	>> def f(x, y) => { x * y }
+	>> f (3 + 5) 2
+	10
+
+	>> def f(x, :quote y) => { x * y }
+	>> f 2 (3 + 5)
+	`(3 + 5 3 + 5)
+
+rest: The rest of the arguments are placed into a list. This may only be the last parameter in a function.
+
+ 	>> def f(x, :rest y) => { y }
+	>> f x
+	(rest y) => { y }
+	
+	>> f 1 2 3 4
+	`(2 3 4)
+	
+	>> def f(:rest x, y) => { x }
+	// error
+	
+--Operator Precedence
+
+Higher-precedence operations happen first.
+
+ 1	class
+ 2	def
+ 3	if while
+ 4	;
+ 5	,
+ 6	->
+ 7	= += -= *= /= %= |= &= >>= <<= ||= &&= **=
+ 8	.. ...
+ 9	|| or
+10	&& and
+11	== !=
+12	<= < > >=
+13	^ |
+14	&
+15	>> <<
+16	+ -
+17	* / %
+18	
+19	<default function precedence>
+20	
+21	=>
+22	! ~ unary +, -
+23	**
+24	.
+25	()
+
+
+***
+
+Using Multiple Statements
+
+Simfpl has very simple syntax, but uses functions in a lot of creative ways to replicate the syntax of other languages. For instance, using multiple statements in one. Multiple statements may be packaged together in one of three ways.
+
+Global.do(rest statements): A function that takes any number of statements, executes them in order, and returns the result of the last value executed.
+
+object.;(statement): Call this function on a statement and provide a statement as an argument. This function will execute first the object, then the passed-in statement, and return the result of the passed-in statement.
+
+Curly bracket syntax: Text surrounded in curly brackets "{ ... }" will assume that a newline indicates a new statement, unless a line contains an incomplete statement, in which case it will wrap to the next line. At compile time, curly bracket statements convert to a call to Global.do().
+
+
+***
+
+Objects and Classes
+
+In Simfpl, everything is an object, and every function is a message to an object.
+
+Class definitions have a number of modifiers.
+
+abstract: may not be instantiated.
+final: no subclasses may be created.
+
+***
+
+Compile Time and Runtime
+
+In order to maximize flexibility, a lot happens at runtime. However, there are some notable things that happen at compile time: 
+
+ * Class definitions.
+ * Function definitions.
+
+***
+
+Compile-Time Errors
+
+All compile-time errors are packaged as exceptions that can be thrown at runtime.
+
+class Error
+
+class SyntaxError(Error)
+
+class ArgumentError(Error)
+
+class IllegalArgumentError(ArgumentError)
+
+class ArgumentMatchError(ArgumentError) "Argument types do not match"
+
+***
+
+Equality
+
+There are several tests of equality for different situations.
+
+eq?: Returns true if the two objects are identical. Usually, this means that the two objects occupy the same space in memory; for numbers, this means they are the same class and hold the same value. So (0 eq? 0) is true but (0 eq? 0.0) is false.
+
+eql?: Two objects in a hash table are considered equal if calling eql? on those objects returns true. By default, acts as equal?.
+
+equal?: The most commonly used equality test, and is equivalent to == in most high-level languages. This compares two objects to determine if their contents are equal. By default an object's equal? method is identical to its eq? method, but it should be redefined whenever possible.
+
+==: An alias for equal?.
+
+***
+
+Notes: 
+- 'type' and 'class' are used interchangeably. 'class' is used whenever possible, and 'type' is used in any place where 'class' would be confusing.

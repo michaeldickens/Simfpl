@@ -1,0 +1,49 @@
+***Precedence Evaluation***
+
+3 * 7 + 5 | 6 + 8 * 2**4
+
+Read each function. If the next one has lower or equal precedence (assuming left association), evaluate each function, moving to the left. If not, move to the next one.
+
+3 * 7 + 5 | 6 + 8 * 2**4
+  ^
+
+(3 * 7) + 5 | 6 + 8 * 2**4
+        ^
+
+((3 * 7) + 5) | 6 + 8 * 2**4
+              ^
+
+((3 * 7) + 5) | 6 + 8 * 2**4
+                  ^
+
+((3 * 7) + 5) | 6 + 8 * 2**4
+                      ^
+
+((3 * 7) + 5) | 6 + 8 * 2**4
+                         ^
+
+((3 * 7) + 5) | 6 + 8 * (2**4)
+                      ^
+
+((3 * 7) + 5) | 6 + (8 * (2**4))
+                  ^
+
+((3 * 7) + 5) | (6 + (8 * (2**4)))
+
+***Source Code as Data***
+
+In a compiled language, it can be tricky to do something like this: 
+
+	eval (`(3 + ) concat `((5 * 2)))
+
+It shouldn't be too difficult to write a simple interpreter that takes a linked list of data and LLVM function calls and evaluates it. This will be slower than a true compilation to LLVM code, but it may be the best I can do.
+
+***Currying***
+
+A partial application creates a struct containing a function pointer and the first however-many arguments. Any call to the partially-applied function calls the function pointer and passes in the first however-many arguments automatically.
+
+	f = 3 + 
+
+compiles to something like
+
+	f = { function '+', 3 }

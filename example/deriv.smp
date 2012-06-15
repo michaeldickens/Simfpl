@@ -1,0 +1,46 @@
+/* 
+	object.bind(:quote symbol): ObjectBind
+	Creates an ObjectBind with (self) and (symbol).
+	
+	class ObjectBind {
+		obj, symbol
+		
+		def init(obj, symbol) => (self.obj = obj; self.symbol = symbol)
+		def match(x) => obj.match(x)
+	}
+	
+	Inside a case expression, if an ObjectBind is found, creates a temporary 
+	variable named (symbol) that lasts for the scope of the individual match 
+	expression; then binds the matched value to that variable.
+*/
+
+def deriv(fun) => {
+	simplify case fun
+		Number -> 0
+		Symbol -> 1
+		`(#Object.bind(f) + #Object.bind(g)) -> `(#(deriv f) + #(deriv g))
+		`(#Object.bind(f) - #Object.bind(g)) -> `(#(deriv f) - #(deriv g))
+		`(#Object.bind(f) * #Object.bind(g)) -> `(#(deriv f) * #g + #f * #(deriv g))
+		`(#Object.bind(f) / #Object.bind(g)) -> 
+				`((#(deriv f) * #g - #f * #(deriv g)) / (#g ** 2))
+		`(#Function.bind(f) #Object.bind(x)) -> `(#(deriv x) * (#(deriv_fun f) #x))
+}
+
+def simplify(exp) => {
+	case (exp map (sub_exp) => (simplify sub_exp))
+		`(1 * #Object.bind(x)) -> x
+		`(0 + #Object.bind(x)) -> x
+		`(0 * Object) -> 0
+		`(#Number.bind(n) + (#Number.bind(m) + #Object.bind(x))) -> `(#(n + m) + #x)
+		`(#Number.bind(n) * (#Number.bind(m) * #Object.bind(x))) -> `(#(n * m) * #x)
+		`(#Number.bind(n) #Function.bind(f) #Number.bind(m)) -> eval (n f m)
+		`(#Function.bind(f) #Number.bind(n)) -> eval (Global f n)
+		
+}
+
+def deriv_fun(fun) => {
+	case fun
+		Math.log -> 1 / 	// This works, thanks to currying
+		Math.sin -> Math.cos
+		Math.cos -> (x) => (- Math.sin(x))
+}
