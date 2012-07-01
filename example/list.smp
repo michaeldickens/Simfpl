@@ -1,0 +1,56 @@
+##
+This file defines all of the non-axiomatic list methods, starting with only 
+car, cdr, and cons.
+##
+
+class List(T) {
+	
+	def head() => (car)
+	
+	def tail() => (cdr)
+	
+	def ->(x) => (self cons x)
+	
+	def ,(x) => (
+		if (x == nil) self
+			(self cons (x cons nil)))
+	
+	def contains(x) => {
+		if (x == (car)) true
+			((cdr) contains x)
+	}
+	
+	def filter(f) => {
+		if (call f (car)) ((car) cons ((cdr) filter f))
+			((cdr) filter f)
+	}
+	
+	def fold(f, &optional start) => {
+		if (start == nil)
+			((cdr) fold f (car))
+			((cdr) fold f (call f start (car)))
+	}
+	
+	def foreach(f) => {
+		call f (car)
+		(cdr) foreach f
+	}
+	
+	def map(f) => {
+		(call f (car)) cons ((cdr) map f)
+	}
+	
+}
+
+class Nil < List {
+
+	def contains(x) => nil
+	
+	def filter(f) => nil
+	
+	def fold(f, &optional start) => start
+
+	def foreach(f) => nil
+	
+	def map(f) => nil
+}

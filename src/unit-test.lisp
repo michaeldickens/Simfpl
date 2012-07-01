@@ -2,10 +2,14 @@
 (defparameter *report-on-failurep* t)
 
 (defun report-success (form)
-  (if *report-on-successp* (format t "SUCCESS: ~a~%" form)))
+  (if *report-on-successp* (format t
+    "SUCCESS: ~a => ~a~%~t~tEQUALS: ~a => ~a~%"
+    (cadr form) (eval (cadr form)) (caddr form) (eval (caddr form)))))
 
 (defun report-failure (form)
-  (if *report-on-failurep* (format t "FAILURE: ~a~%" form)))
+  (if *report-on-failurep* (format t 
+    "FAILURE: ~a => ~a~%~t~tDOES NOT EQUAL: ~a => ~a~%"
+    (cadr form) (eval (cadr form)) (caddr form) (eval (caddr form)))))
 
 (defmacro report-result (form)
   `(let ((successp (eval ,form)))
@@ -19,6 +23,12 @@
   t)
 
 (defmacro check (&body forms)
+  `(combine-all
+     ,@(loop for form in forms collect `(report-result ',form))))
+
+;;; Any forms must not have side effects because they will be evaluated 
+;;; repeatedly.
+(defmacro check-equality (&body forms)
   `(combine-all
      ,@(loop for form in forms collect `(report-result ',form))))
 

@@ -1,0 +1,19 @@
+***TODO***
+
+General
+ + Write a syntax analyzer.
+ * Implement a garbage collector in LLVM.
+ * Implement the basic Simfpl objects and functions in LLVM.
+ * Write an intermediate code generator.
+ * Write a code generator.
+ * Write an optimizer.
+
+Specific
+ * Refactor the code in /c/ to work for compiled Simfpl. Remove all the code that works with the interpreter.
+
+See individual files (search "TODO") for more.
+
+
+
+***BUGS***
+ * No known bugs.

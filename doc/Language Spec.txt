@@ -2,7 +2,7 @@ Simfpl--Simple Integrated Mathematically-Oriented Functional Programming Languag
 
 Why?
 
-Dynamic: While static typing offers safer code and type inference can keep the type system out of your way, in practice I find static typing slows me down and dynamic typing does not lead to more errors.
+Dynamic Typing: Offers the programmer maximum flexibility. Static typing with lists is too messy, and lists are too important.
 
 Object-Oriented: An object system provides great benefits, and most modern languages are object-oriented.
 
@@ -19,11 +19,19 @@ Challenge: All else being equal, Simfpl implements the features that take the mo
 These unconventional principles dictate that Simfpl include lazy evaluation, functional programming, currying, and source code as data.
 
 
-***
+-----
 
-Special Object Syntax
+ *** Standard Types ***
 
---Strings and Regular Expressions
+Object: The class from which all other classes inherit.
+
+Integer: A positive or negative whole number.
+
+Float: A floating-point number.
+
+ *** Special Object Syntax ***
+
+***Strings and Regular Expressions***
 
 Strings can be read in two ways: "like this" or 'like this'. The two ways come from Perl. For single-quoted strings, backslashes are read as literal characters except when followed by a single quote or another backslash. For double-quoted strings, the full spectrum of escaped characters is possible. A backslash followed by an illegal escaped character will ignore the backslash.
 
@@ -67,7 +75,7 @@ In the bracket syntax, brackets may be used without escaping them because the co
 	>> %r[]]
 	Error: Unmatched close bracket.
 
---Quote
+***Quote***
 
 Code may be quoted with the (quote) function. Quoted code is not evaluated.
 
@@ -86,7 +94,7 @@ Code inside a quote may be evaluated with the dq (de-quote) function.
 	>> `(3 + #(4 + 1))
 	`(3 + 5)
 
---Arrays and Indexing
+***Arrays and Indexing***
 
 An array is defined by square brackets surrounding comma-separated elements, as in C: 
 
@@ -104,7 +112,7 @@ During preprocessing, this compiles to
 	(a at 2)
 
 
---Lists
+***Lists***
 
 	 %l[ 1, 2, 3, 4 ]
 
@@ -112,28 +120,35 @@ compiles to (list 1 2 3 4).
 
 The arrow (->) and the word cons act as constructors. Commas also construct lists, except that if two objects are separated by a comma, they will be put into a list and nil will be automatically added to the end.
 
+WARNING: A list of comma-separated values with nil at the end will NOT put nil in a car cell. It will consider nil to terminate the list.
+
 The following all evaluate to the same as above: 
 
 	1 -> 2 -> 3 -> 4 -> nil
 	1 cons 2 cons 3 cons 4 cons nil
 	1, 2, 3, 4
+	1, 2, 3, 4, nil
 	1, (2 cons (3 -> 4 cons nil))
 
 cons has standard function precedence, while comma and -> have a much lower precedence.
 
---Hashes
+***Hashes***
 
 	%h[ "apples" -> 1, "pears" -> 0, "grapes" -> 8 ]
 
 compiles to (hash ("apples" -> 1) ("pears" -> 0) ("grapes" -> 8)).
 
-***
+-----
 
-Functions
+ *** Functions ***
 
 A function definition looks like this: 
 
 	def f(x, y) => { x * y }
+
+Notice that the function does not declare the return type. You may declare it if you wish, and it is safer to do so; if you do not, the compiler will infer the return type.
+
+	def f(x, y) => Integer { x * y }
 
 Every function is a message to an object. If the function is declared outside of a class declaration, it resides within the Global class.
 
@@ -143,19 +158,25 @@ In fact, a function definition simply takes a lambda and applies it to the names
 
 	(x, y) => { x * y }
 
-One may assign a function to a variable with
+One may assign a function to a variable with 
 
 	my_function = (x, y) => { x * y }
 
-Function calls may adopt Lisp-style or C-style syntax: 
+and then call it with
+
+	(call my_function)
+
+Function calls adopt a syntax similar to Lisp. A function call contains first the name of the object, then the name of the function, then the arguments.
 
 	(Global f x y)
+	
+If no object name is given, it is assumed to be the object in which the function is defined (which is called self). If the function is not defined within an object, Global is given as the function name.
 
-	Global.f(x, y)
+	(f x y) # same as either (self f x y) or (Global f x y)
 
 The second form compiles to the first form during preprocessing.
 
---Currying
+***Currying***
 
 Functions may be partially applied, like so: 
 
@@ -166,13 +187,13 @@ Functions may be partially applied, like so:
 	>> foo 4
 	12
 
---Keywords
+***Keywords***
 
-Keywords begin with a colon. Variables may not begin with a colon.
+Keywords begin with an ampersand. Variables may not begin with an ampersand.
 
 right_assoc: The function is right-associative. This keyword may only be placed at the beginning of the argument list.
 
-	>> class Integer { def f(:right_assoc x) => { self - x } }
+	>> class Integer { def f(&right_assoc x) => { self - x } }
 	>> 1 - 2 - 3
 	-4
 	
@@ -191,23 +212,45 @@ quote: Passes an argument to a function without evaluating it.
 	>> f (3 + 5) 2
 	10
 
-	>> def f(x, :quote y) => { x * y }
+	>> def f(x, &quote y) => { x * y }
 	>> f 2 (3 + 5)
 	`(3 + 5 3 + 5)
 
 rest: The rest of the arguments are placed into a list. This may only be the last parameter in a function.
 
- 	>> def f(x, :rest y) => { y }
-	>> f x
-	(rest y) => { y }
+ 	>> def f(x, &rest y) => { y }
+	>> f 1
+	(&rest y) => { y }
 	
 	>> f 1 2 3 4
 	`(2 3 4)
 	
-	>> def f(:rest x, y) => { x }
-	// error
+	>> def f(&rest x, y) => { x }
+	# error
+
+optional: An argument may be left off. Any arguments after an optional argument must be either &optional or &rest. There may be a third value after the name of the argument which indicates the default value of the argument. If none is given, the default value is nil.
+
+	>> def f(&optional x, &optional y) => { "#x and #y" }
+	>> f 1 4
+	"1 and 4"
 	
---Operator Precedence
+	>> f 1
+	"1 and nil"
+	
+	>> f
+	"nil and nil"
+	
+	>> def f(&optional x 5, &rest y) { x cons y }
+	>> f 1 2 3 4
+	`(1 2 3 4)
+	
+	>> f 1
+	`(1)
+	
+	>> f
+	`(5)
+	
+***Operator Precedence***
 
 Higher-precedence operations happen first.
 
@@ -219,8 +262,8 @@ Higher-precedence operations happen first.
  6	->
  7	= += -= *= /= %= |= &= >>= <<= ||= &&= **=
  8	.. ...
- 9	|| or
-10	&& and
+ 9	||
+10	&&
 11	== !=
 12	<= < > >=
 13	^ |
@@ -229,18 +272,29 @@ Higher-precedence operations happen first.
 16	+ -
 17	* / %
 18	
-19	<default function precedence>
+19	<default function precedence> and or eq ...
 20	
 21	=>
-22	! ~ unary +, -
+22	! ~
 23	**
 24	.
-25	()
+25  unary +, -
+26	()
+
+(Note: unary +, - are parsed as part of the number rather than as a separate function.)
+
+-----
+
+ *** Static Typing ***
+
+Simfpl has type inference, so most of the time you don't have to declare types. It will infer variable types and function return types.
+
+You do have to define types in function definitions. If you declare an argument using the special type Any, the compiler does some magic. Suppose you define a function like so: (def foo(Any x) => { ... }). The compiler will make a list of functions called on x within the definition of foo. Then, any time foo(n) is called, the compiler will ensure that n has all of those functions. If it doesn't, the compiler will throw a type error.
 
 
-***
+-----
 
-Using Multiple Statements
+ *** Using Multiple Statements ***
 
 Simfpl has very simple syntax, but uses functions in a lot of creative ways to replicate the syntax of other languages. For instance, using multiple statements in one. Multiple statements may be packaged together in one of three ways.
 
@@ -251,9 +305,9 @@ object.;(statement): Call this function on a statement and provide a statement a
 Curly bracket syntax: Text surrounded in curly brackets "{ ... }" will assume that a newline indicates a new statement, unless a line contains an incomplete statement, in which case it will wrap to the next line. At compile time, curly bracket statements convert to a call to Global.do().
 
 
-***
+-----
 
-Objects and Classes
+ *** Objects and Classes ***
 
 In Simfpl, everything is an object, and every function is a message to an object.
 
@@ -262,18 +316,28 @@ Class definitions have a number of modifiers.
 abstract: may not be instantiated.
 final: no subclasses may be created.
 
-***
+A class that implements an abstract class must define all of its methods.
 
-Compile Time and Runtime
+Variables are accessed with the get method: 
+
+	(obj get x)
+
+Alternatively, use a . between the object and the variable name: 
+
+	obj.x
+
+-----
+
+ *** Compile Time and Runtime ***
 
 In order to maximize flexibility, a lot happens at runtime. However, there are some notable things that happen at compile time: 
 
  * Class definitions.
  * Function definitions.
 
-***
+-----
 
-Compile-Time Errors
+ *** Compile-Time Errors ***
 
 All compile-time errors are packaged as exceptions that can be thrown at runtime.
 
@@ -285,23 +349,23 @@ class ArgumentError(Error)
 
 class IllegalArgumentError(ArgumentError)
 
-class ArgumentMatchError(ArgumentError) "Argument types do not match"
+-----
 
-***
-
-Equality
+ *** Equality ***
 
 There are several tests of equality for different situations.
 
-eq?: Returns true if the two objects are identical. Usually, this means that the two objects occupy the same space in memory; for numbers, this means they are the same class and hold the same value. So (0 eq? 0) is true but (0 eq? 0.0) is false.
+eq?: Returns true if the two objects are identical. Usually, this means that the two objects occupy the same space in memory; for numbers, this means they are the same class and hold the same value. So (0 eq? 0) is true but (0 eq? 0.0) is false. User-defined classes should NOT redefine this method.
 
 eql?: Two objects in a hash table are considered equal if calling eql? on those objects returns true. By default, acts as equal?.
 
-equal?: The most commonly used equality test, and is equivalent to == in most high-level languages. This compares two objects to determine if their contents are equal. By default an object's equal? method is identical to its eq? method, but it should be redefined whenever possible.
+equal?: This compares two objects to determine if their contents are equal. By default an object's equal? method is identical to its eq? method, but user-defined classes should redefine this method whenever possible. Two numbers are equal if they are numerically equivalent; two strings are equal if they have the same contents; two lists are equal if their cons cells contain equal values; etc.
 
 ==: An alias for equal?.
 
-***
+match: Determines if two objects are equal for a case expression.
+
+-----
 
 Notes: 
 - 'type' and 'class' are used interchangeably. 'class' is used whenever possible, and 'type' is used in any place where 'class' would be confusing.

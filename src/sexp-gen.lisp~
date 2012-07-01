@@ -1,0 +1,4 @@
+(load "parser.lisp")
+
+;;;; Takes syntax-analyzed code and converts it into intermediate code, i.e. 
+;;;; s-expressions.

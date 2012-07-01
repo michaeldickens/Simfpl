@@ -38,6 +38,16 @@ In a compiled language, it can be tricky to do something like this:
 
 It shouldn't be too difficult to write a simple interpreter that takes a linked list of data and LLVM function calls and evaluates it. This will be slower than a true compilation to LLVM code, but it may be the best I can do.
 
+If you want to get fancy, write a Simfpl interpreter in Simfpl and compile it to LLVM.
+
+***Compiling Literals***
+
+As they are being compiled, literals are converted into Lisp data. This works fine for strings and numbers, because immutable Lisp strings and numbers can handle anything that immutable Simfpl strings and numbers can handle (e.g. arbitrary-precision numbers—note that arbitrary-precision arithmetic is not necessary because the compiler does not perform any operations on literals).
+
+***Method Calls***
+
+The compiler should store object methods in a hash table, but this approach tends to be slow. In LLVM code, a method called foo() in object MyObj should compile to @smpMyObj_foo(). Under this system, collisions should be impossible: if the user creates a global method named smpMyObj_foo(), it will compile to @smpGlobal_smpMyObj_foo(). 
+
 ***Currying***
 
 A partial application creates a struct containing a function pointer and the first however-many arguments. Any call to the partially-applied function calls the function pointer and passes in the first however-many arguments automatically.
@@ -47,3 +57,16 @@ A partial application creates a struct containing a function pointer and the fir
 compiles to something like
 
 	f = { function '+', 3 }
+
+WARNING: Be sure to avoid ambiguity with optional arguments. Consider this: 
+
+	>> def f(x, y, &optional z) => { "#x and #y and #z" }
+	>> f 1 2 // this should NOT curry
+	"1 and 2 and nil"
+	
+	>> f 1 // this SHOULD curry
+	(y, &optional z) => { x = 1; "#x and #y and #z" }
+
+I'm not sure I should include currying. It seems frivolous, and doesn't fit that well with optional and rest arguments.
+	
+	

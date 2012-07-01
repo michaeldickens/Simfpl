@@ -262,7 +262,7 @@ NIL or a STR object of the same case mode. Always returns NIL."
                 ;; we modify STARTS-WITH in place
                 (setf (len starts-with)
                         (+ (len starts-with) (len str)))
-                ;; note that we use SLOT-VALUE because the accessor
+                ;; note that we use SLOT-Object because the accessor
                 ;; STR has a declared FTYPE which doesn't fit here
                 (adjust-array (slot-value starts-with 'str)
                               (len starts-with)

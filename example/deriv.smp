@@ -1,4 +1,4 @@
-/* 
+##
 	object.bind(:quote symbol): ObjectBind
 	Creates an ObjectBind with (self) and (symbol).
 	
@@ -12,7 +12,7 @@
 	Inside a case expression, if an ObjectBind is found, creates a temporary 
 	variable named (symbol) that lasts for the scope of the individual match 
 	expression; then binds the matched value to that variable.
-*/
+##
 
 def deriv(fun) => {
 	simplify case fun
@@ -40,7 +40,7 @@ def simplify(exp) => {
 
 def deriv_fun(fun) => {
 	case fun
-		Math.log -> 1 / 	// This works, thanks to currying
+		Math.log -> 1 / 	# This works, thanks to currying
 		Math.sin -> Math.cos
 		Math.cos -> (x) => (- Math.sin(x))
 }
