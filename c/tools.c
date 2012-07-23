@@ -6,8 +6,6 @@
  *
  */
 
-#include "tools.h"
-
 /* Having this separate function is kind of pointless because regular 
  * expressions, snprintf, and possibly other things all use malloc(). It works 
  * fine as long as smp_malloc() just calls malloc().

@@ -6,8 +6,6 @@
  *
  */
 
-#include "smp_classes.h"
-
 int gc_init()
 {
 	gc_stack_length = 0;
@@ -20,7 +18,7 @@ int gc_init()
 
 int gc_stack_push(Object *obj)
 {
-	if (obj->type->name && smptype_name_eq(*obj, "Class") && 
+	if (obj->type->name && smpType_name_eq(*obj, "Class") && 
 			isalpha(obj_core(SmpType, *obj).name[0]) == FALSE) {
 		printf("adding %s\n", obj_core(SmpType, *obj).name);
 	}
@@ -77,7 +75,7 @@ int gc_run()
 
 int mh_print_funs(char *key, Object val)
 {
-	if (smptype_name_eq(val, "Function")) {
+	if (smpType_name_eq(val, "Function")) {
 		printf("found %lx (%s)\n", (unsigned long) obj_core(SmpFun, val).fun, key);
 	}
 	
@@ -118,7 +116,7 @@ int gc_mark_recursive(char *key, Object obj)
 	}
 		
 	GC_MARK_OBJECT(obj);
-	smpobj_funcall(obj, "gc_mark", 0, NULL);
+	smpObject_funcall(obj, "gc_mark", 0, NULL);
 	
 	return 0;
 }

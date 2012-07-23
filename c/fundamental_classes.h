@@ -16,7 +16,7 @@
  * 
  */
 
-int smpcollection_create_class();
+int smpCollection_create_class();
 
 /* 
  * 
@@ -24,28 +24,28 @@ int smpcollection_create_class();
  * 
  * A cell containing a car and a cdr.
  */
-typedef struct smppair_struct {
+typedef struct smpPair_struct {
 	Object car;
 	Object *cdr;
 } SmpPair;
 
-int smppair_create_class();
+int smpPair_create_class();
 
-#define smppair_car_c(obj) (obj_core(SmpList, (obj)).car)
-#define smppair_cdr_c(obj) (obj_deref(obj_core(SmpList, (obj)).cdr))
+#define smpPair_car_c(obj) (obj_core(SmpList, (obj)).car)
+#define smpPair_cdr_c(obj) (obj_deref(obj_core(SmpList, (obj)).cdr))
 
-Object smppair_car(Object obj, int argc, Object argv[]);
-Object smppair_cdr(Object obj, int argc, Object argv[]);
-Object smppair_clear(Object obj, int argc, Object argv[]);
-Object smppair_gc_mark(Object obj, int argc, Object argv[]);
-Object smppair_init(Object car, Object cdr);
+Object smpPair_car(Object obj, int argc, Object argv[]);
+Object smpPair_cdr(Object obj, int argc, Object argv[]);
+Object smpPair_clear(Object obj, int argc, Object argv[]);
+Object smpPair_gc_mark(Object obj, int argc, Object argv[]);
+Object smpPair_init(Object car, Object cdr);
 
 /* Sets the car to argv[0]. */
-Object smppair_set_car_now(Object obj, int argc, Object argv[]);
-Object smppair_set_cdr_now(Object obj, int argc, Object argv[]);
+Object smpPair_set_car_now(Object obj, int argc, Object argv[]);
+Object smpPair_set_cdr_now(Object obj, int argc, Object argv[]);
 
-Object smppair_to_s(Object obj, int argc, Object argv[]);
-Object smppair_write(Object obj, int argc, Object argv[]);
+Object smpPair_to_s(Object obj, int argc, Object argv[]);
+Object smpPair_write(Object obj, int argc, Object argv[]);
 
 
 /* 
@@ -64,41 +64,42 @@ Object smppair_write(Object obj, int argc, Object argv[]);
  */
 typedef SmpPair SmpList;
 
-#define smplist_check_nil(list) \
-	if (smptype_id_eq(list, smptype_id_nil)) \
+#define smpList_check_nil(list) \
+	if (smpType_id_eq(list, smpType_id_nil)) \
 		return smp_nil;
 
-int smplist_create_class();
+int smpList_create_class();
 
-#define smplist_car_c(obj) smppair_car_c(obj)
-#define smplist_cdr_c(obj) smppair_cdr_c(obj)
+#define smpList_car_c(obj) smpPair_car_c(obj)
+#define smpList_cdr_c(obj) smpPair_cdr_c(obj)
 
-Object smplist_add_now(Object obj, int argc, Object argv[]);
-Object smplist_car(Object obj, int argc, Object argv[]);
-Object smplist_cdr(Object obj, int argc, Object argv[]);
+Object smpList_add_now(Object obj, int argc, Object argv[]);
+Object smpList_car(Object obj, int argc, Object argv[]);
+Object smpList_cdr(Object obj, int argc, Object argv[]);
 
 /* Clears the list. Note that this does not clear the objects inside the list.
  */
-Object smplist_clear(Object obj, int argc, Object argv[]);
+Object smpList_clear(Object obj, int argc, Object argv[]);
 
-Object smplist_emptyp(Object obj, int argc, Object argv[]);
-Object smplist_equalp(Object obj, int argc, Object argv[]);
-Object smplist_gc_mark(Object obj, int argc, Object argv[]);
-Object smplist_get(Object obj, int argc, Object argv[]);
-Object smplist_get_clong(Object obj, long index);
-Object smplist_init(SmpList list);
+Object smpList_emptyp(Object obj, int argc, Object argv[]);
+Object smpList_equalp(Object obj, int argc, Object argv[]);
+Object smpList_gc_mark(Object obj, int argc, Object argv[]);
+Object smpList_get(Object obj, int argc, Object argv[]);
+Object smpList_get_clong(Object obj, long index);
+Object smpList_init(SmpList list);
 
-Object smplist_length(Object obj, int argc, Object argv[]);
-long smplist_length_clong(Object obj);
+Object smpList_length(Object obj, int argc, Object argv[]);
+long smpList_length_clong(Object obj);
 
-Object smplist_map(Object obj, int argc, Object argv[]);
+Object smpList_map(Object obj, int argc, Object argv[]);
+Object smpList_reduce(Object obj, int argc, Object argv[]);
 
 /* 
  * Takes one optional argument. If given, separates elements by the string in 
  * argv[0]. If not, separates elements by a space.
  */
-Object smplist_to_s(Object obj, int argc, Object argv[]);
-Object smplist_write(Object obj, int argc, Object argv[]);
+Object smpList_to_s(Object obj, int argc, Object argv[]);
+Object smpList_write(Object obj, int argc, Object argv[]);
 
 
 /* 
@@ -112,10 +113,10 @@ typedef struct listbuf_struct {
 	Object last;
 } SmpListBuf;
 
-Object smplistbuf_add_now(Object obj, int argc, Object argv[]);
-Object smplistbuf_gc_mark(Object obj, int argc, Object argv[]);
-Object smplistbuf_init();
-Object smplistbuf_to_list(Object obj, int argc, Object argv[]);
+Object smpListBuffer_add_now(Object obj, int argc, Object argv[]);
+Object smpListBuffer_gc_mark(Object obj, int argc, Object argv[]);
+Object smpListBuffer_init();
+Object smpListBuffer_to_list(Object obj, int argc, Object argv[]);
 
 /* 
  * 
@@ -127,20 +128,23 @@ Object smplistbuf_to_list(Object obj, int argc, Object argv[]);
  * Object.
  */
 
-Object smpbool_init(int truep);
-int smpbool_to_cint(Object obj);
+Object smpBool_init(int truep);
+int smpBool_to_cint(Object obj);
 Object smptrue_to_s(Object obj, int argc, Object argv[]);
+
+#define bool_to_obj(x) ((x) ? smp_true : smp_nil)
 
 /* Bool functions that can be called on any Object.
  */
 
-Object smpbool_and(Object obj, int argc, Object argv[]);
-Object smpbool_not(Object obj, int argc, Object argv[]);
-Object smpbool_or(Object obj, int argc, Object argv[]);
-Object smpbool_xor(Object obj, int argc, Object argv[]);
+Object smpObject_truep(Object obj, int argc, Object argv[]);
+int smpObject_truep_c(Object obj);
 
+Object smpBool_and(Object obj, int argc, Object argv[]);
+Object smpBool_not(Object obj, int argc, Object argv[]);
+Object smpBool_or(Object obj, int argc, Object argv[]);
+Object smpBool_xor(Object obj, int argc, Object argv[]);
 
-#define bool_to_obj(x) ((x) ? smp_true : smp_nil)
 /* 
  * 
  * Nil
@@ -149,14 +153,14 @@ Object smpbool_xor(Object obj, int argc, Object argv[]);
  * considered false. All other values are true.
  */
 
-int smpnil_create_class();
+int smpNil_create_class();
 
-Object smpnil_car(Object obj, int argc, Object argv[]);
-Object smpnil_cdr(Object obj, int argc, Object argv[]);
-Object smpnil_emptyp(Object obj, int argc, Object argv[]);
-Object smpnil_equalp(Object obj, int argc, Object argv[]);
-Object smpnil_to_s(Object obj, int argc, Object argv[]);
-Object smpnil_write(Object obj, int argc, Object argv[]);
+Object smpNil_car(Object obj, int argc, Object argv[]);
+Object smpNil_cdr(Object obj, int argc, Object argv[]);
+Object smpNil_emptyp(Object obj, int argc, Object argv[]);
+Object smpNil_equalp(Object obj, int argc, Object argv[]);
+Object smpNil_to_s(Object obj, int argc, Object argv[]);
+Object smpNil_write(Object obj, int argc, Object argv[]);
 
 
 
@@ -168,16 +172,16 @@ Object smpnil_write(Object obj, int argc, Object argv[]);
  * 
  */
 
-int smptype_next_id;
-MiniHash smptype_ids;
+int smpType_next_id;
+MiniHash smpType_ids;
 
 /* 
  * Defines an abstract method. The defined method can be inherited but not 
  * actually called.
  */
-Object smptype_abstract_def(Object type, int scope, char *name, int argc, ...);
+Object smpType_abstract_def(Object type, int scope, char *name, int argc, ...);
 
-Object smptype_clear(Object obj, int argc, Object argv[]);
+Object smpType_clear(Object obj, int argc, Object argv[]);
 
 /* 
  * Defines a method.
@@ -195,24 +199,24 @@ Object smptype_clear(Object obj, int argc, Object argv[]);
  * 
  * return: Nil.
  */
-Object smptype_def_general(Object type, int flags, char *name, Object obj);
-Object smptype_def(Object type, int flags, char *name, Object fun);
-Object smptype_defvar(Object type, int flags, char *name, Object var);
+Object smpType_def_general(Object type, int flags, char *name, Object obj);
+Object smpType_def(Object type, int flags, char *name, Object fun);
+Object smpType_defvar(Object type, int flags, char *name, Object var);
 
-Object smptype_equalp(Object obj, int argc, Object argv[]);
-Object smptype_gc_mark(Object obj, int argc, Object argv[]);
+Object smpType_equalp(Object obj, int argc, Object argv[]);
+Object smpType_gc_mark(Object obj, int argc, Object argv[]);
 
 /* Tests whether the first class is the same as or the subclass of the second 
  * class.
  */
-Object smptype_subclassp(Object obj, int argc, Object argv[]);
+Object smpType_subclassp(Object obj, int argc, Object argv[]);
 
 
 /*
  * Function
  * 
  */
-typedef struct smpfun_struct {
+typedef struct smpFunction_struct {
 	/* Indicates the permission of the function.
 	 * public: May be called from anywhere.
 	 * package: May only be called from within the package.
@@ -224,9 +228,8 @@ typedef struct smpfun_struct {
 	
 	char *name;
 	
-	/* An array where the first element is for the return value  and the rest 
+	/* An array where the first element is for the return value and the rest 
 	 * are for the arguments.
-	 * 
 	 */
 	struct argspec_struct *argspecs;
 	int argspecs_length : 16;
@@ -244,7 +247,7 @@ typedef struct smpfun_struct {
  * 
  */
 typedef struct argspec_struct {
-	/* The name of the argument. Used for external functions only.
+	/* The name of the argument.
 	 * WARNING: This MUST be set by a string literal because it is never 
 	 * cleared. If it is set with a string on the heap, there will be 
 	 * memory leakage.
@@ -267,13 +270,13 @@ typedef struct argspec_struct {
 	
 } argspec_t;
 
-#define smpfun_name(obj) (obj_core(SmpFun, obj).name)
+#define smpFunction_name(obj) (obj_core(SmpFun, obj).name)
 
-int smpfun_create_class();
+int smpFunction_create_class();
 
-Object smpfun_call(Object obj, Object fun, int argc, Object argv[]);
-Object smpfun_clear(Object obj, int argc, Object argv[]);
-Object smpfun_gc_mark(Object obj, int argc, Object argv[]);
+Object smpFunction_call(Object obj, Object fun, int argc, Object argv[]);
+Object smpFunction_clear(Object obj, int argc, Object argv[]);
+Object smpFunction_gc_mark(Object obj, int argc, Object argv[]);
 
 /* Initializes a function.
  * 
@@ -283,18 +286,18 @@ Object smpfun_gc_mark(Object obj, int argc, Object argv[]);
  *   "&optional". A "&default" argument must be followed by an Object, not a C 
  *   string.
  */
-Object smpfun_init(Object (*fun)(Object obj, int argc, Object argv[]), 
+Object smpFunction_init(Object (*fun)(Object obj, int argc, Object argv[]), 
 		int argc, ...);
-Object smpfun_init_v(Object (*fun)(Object obj, int argc, Object argv[]), 
+Object smpFunction_init_v(Object (*fun)(Object obj, int argc, Object argv[]), 
 		int argc, va_list ap);
-Object smpfun_to_s(Object obj, int argc, Object argv[]);
+Object smpFunction_to_s(Object obj, int argc, Object argv[]);
 
 
 /*
  * Exception
  * 
  */
-typedef struct smpexc_struct {
+typedef struct smpException_struct {
 	/* The message carried by the exception.
 	 */
 	char *message;
@@ -305,32 +308,32 @@ typedef struct smpexc_struct {
 	Object backtrace;
 } SmpExc;
 
-typedef struct smptypeerr_struct {
+typedef struct smpTypeError_struct {
 	char *message;
 	Object backtrace;
 	SmpType *expected;
 	Object found;
 } SmpTypeExc;
  
-int smpexc_create_class();
+int smpException_create_class();
 
 /* Creates an empty instance of the exception of the given type. Assumes that 
  * the type uses SmpExc as its core.
  */
-Object smpexc_backtrace_add_now(Object exc, Object obj, Object fun);
-Object smpexc_clear(Object obj, int argc, Object argv[]);
-Object smpexc_gc_mark(Object obj, int argc, Object argv[]);
-Object smpexc_init(Object type);
-Object smpexc_init_fmt(Object type, const char *fmt, ...);
-Object smpexc_print(Object obj);
-Object smpexc_to_s(Object obj, int argc, Object argv[]);
+Object smpException_backtrace_add_now(Object exc, Object obj, Object fun);
+Object smpException_clear(Object obj, int argc, Object argv[]);
+Object smpException_gc_mark(Object obj, int argc, Object argv[]);
+Object smpException_init(Object type);
+Object smpException_init_fmt(Object type, const char *fmt, ...);
+Object smpException_print(Object obj);
+Object smpException_to_s(Object obj, int argc, Object argv[]);
 
-Object smptypeerr_clear(Object obj, int argc, Object argv[]);
-Object smptypeerr_gc_mark(Object obj, int argc, Object argv[]);
-Object smptypeerr_init(SmpType *expected, Object found);
-Object smptypeerr_init_detailed(SmpType *expected, Object found, const char *fmt, ...);
-Object smptypeerr_init_fmt(const char *fmt, ...);
-Object smptypeerr_to_s(Object obj, int argc, Object argv[]);
+Object smpTypeError_clear(Object obj, int argc, Object argv[]);
+Object smpTypeError_gc_mark(Object obj, int argc, Object argv[]);
+Object smpTypeError_init(SmpType *expected, Object found);
+Object smpTypeError_init_detailed(SmpType *expected, Object found, const char *fmt, ...);
+Object smpTypeError_init_fmt(const char *fmt, ...);
+Object smpTypeError_to_s(Object obj, int argc, Object argv[]);
 
 /* 
  * Thrown
@@ -339,7 +342,7 @@ Object smptypeerr_to_s(Object obj, int argc, Object argv[]);
  * exception.
  * 
  */
-typedef struct smpthrown_struct {
+typedef struct smpThrown_struct {
 	int type : 4;
 	Object *objs;
 	size_t length;
@@ -349,17 +352,22 @@ typedef struct smpthrown_struct {
 #define SMPTHROWN_RETURN 1
 #define SMPTHROWN_BREAK 2
 
-int smpthrown_create_class();
+int smpThrown_create_class();
 
-Object smpthrown_add_exception_now(Object *obj, Object exc);
-int smpthrown_contains_namep(Object obj, char *name);
-Object smpthrown_gc_mark(Object obj, int argc, Object argv[]);
-Object smpthrown_init(int type, Object obj);
+Object smpThrown_add_exception_now(Object *obj, Object exc);
+int smpThrown_contains_namep(Object obj, char *name);
+Object smpThrown_gc_mark(Object obj, int argc, Object argv[]);
+Object smpThrown_init(int type, Object obj);
+Object smpThrown_get_first_value(Object obj);
+
+int smp_should_breakp_c(Object obj);
+int smp_should_returnp_c(Object obj);
+int smp_thrown_exceptionp_c(Object obj);
 
 /* Note: No clear() function is necessary because there is nothing to clear.
  */
 
-Object smpthrown_to_s(Object obj, int argc, Object argv[]);
+Object smpThrown_to_s(Object obj, int argc, Object argv[]);
 
 /* 
  * String
@@ -374,43 +382,43 @@ int smpstrcreate_class();
 
 int obj_init_str(Object *obj, char *str);
 
-Object smpstr_add(Object obj, int argc, Object argv[]);
-Object smpstr_add_now(Object obj, int argc, Object argv[]);
-Object smpstr_clear(Object obj, int argc, Object argv[]);
-Object smpstr_equalp(Object obj, int argc, Object argv[]);
-int smpstr_equalp_cstr(Object obj, char *str);
+Object smpString_add(Object obj, int argc, Object argv[]);
+Object smpString_add_now(Object obj, int argc, Object argv[]);
+Object smpString_clear(Object obj, int argc, Object argv[]);
+Object smpString_equalp(Object obj, int argc, Object argv[]);
+int smpString_equalp_cstr(Object obj, char *str);
 
 /* Initializes a String from a C string.
  */
-Object smpstr_init(char *str);
+Object smpString_init(char *str);
 
 /* Initializes a String from a C string of a given length. If length is greater 
  * than the length of str, the initialized string will still be no longer than 
  * str.
  */
-Object smpstr_init_length(char *str, size_t length);
+Object smpString_init_length(char *str, size_t length);
 
 /* Initializes a String from a reference to a C string. The core of the 
  * initialized string will be a pointer to the same string as *str, so *str 
  * should never be deallocated.
  */
-Object smpstr_init_ref(char **str);
+Object smpString_init_ref(char **str);
 
 /* Initializes a String from a format, as would be used by printf().
  */
-Object smpstr_init_fmt(char *format, ...);
+Object smpString_init_fmt(char *format, ...);
 
-Object smpstr_reverse(Object obj, int argc, Object argv[]);
+Object smpString_reverse(Object obj, int argc, Object argv[]);
 Object smpstrsubstring(Object obj, int start, int length);
 
-char * smpstr_to_cstr(Object obj);
+char * smpString_to_cstr(Object obj);
 
 /* Returns itself.
  */
-Object smpstr_to_s(Object obj, int argc, Object argv[]);
+Object smpString_to_s(Object obj, int argc, Object argv[]);
 
 /* Surrounds the string in quotes and non-literal characters such as tab and 
  * newline into a character representation such as "\t" or "\n".
  */
-Object smpstr_write(Object obj, int argc, Object argv[]);
+Object smpString_write(Object obj, int argc, Object argv[]);
 

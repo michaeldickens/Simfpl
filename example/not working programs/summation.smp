@@ -1,0 +1,6 @@
+{
+def summation(xs f) (
+  xs reduce ((x y) => (x + (Global funcall f y))) 0)
+
+println (Global summation (list 1 2 3 4 5) ((x) => (2 ** x)))
+}

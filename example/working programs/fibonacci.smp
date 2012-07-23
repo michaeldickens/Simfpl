@@ -1,0 +1,22 @@
+##
+Computes the sum of all even Fibonacci numbers below 4,000,000.
+This is Problem 2 of Project Euler. The solution is 4613732.
+##
+
+{
+# Make a list of Fibonacci numbers up to 4 million.
+$fibs = (list 1 1)
+while (($fibs car) < 4000000) (
+  $fibs = ($fibs car + $fibs cdr car) cons $fibs)
+
+# Find the sum of the even Fibonacci numbers in the list.
+$sum = 0
+$i = 0
+while $fibs {
+  if (($fibs car) % 2 == 0) (
+    $sum = $sum + ($fibs car))
+  $fibs = ($fibs cdr)
+}
+
+println $sum
+}

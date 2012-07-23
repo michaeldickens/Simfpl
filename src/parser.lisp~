@@ -5,11 +5,11 @@
 ;;; Characters that always make up their own symbol and cannot be part of 
 ;;; another token.
 (defparameter *rematch-single-char* 
-  (concatenate 'string "[\\(\\),\\.\\[\\]\\{\\}" *newline* "]"))
+  (concatenate 'string "[\\(\\),\\.;\\:\\[\\]\\{\\}" *newline* "]"))
 
 ;;; Supports floating point, scientific notation, and negation, but not 
 ;;; any base other than 10.
-(defparameter *rematch-number* "(\\+|-)?\\d+(\\.\\d+)?([eE]\\d+)?")
+(defparameter *rematch-number* "-?\\d+(\\.\\d+)?([eE]\\d+)?")
 
 (defparameter *rematch-symbol* (concatenate 'string 
     *rematch-single-char* "|[^'\"#\\s\\d" 
@@ -19,7 +19,7 @@
 ;;; Single-quoted string.
 (defparameter *rematch-single-string* "'([^']|(\\'))*'")
 
-;;; Double-quoted string.
+;;; Double-quoted string. TODO: I don't think this is correct.
 (defparameter *rematch-double-string* "\"([^\"]|(\\\"))*\"")
 
 (defparameter *rematch-comment* (concatenate 'string 
@@ -69,7 +69,9 @@
 (defun string-to-token (str)
   (cond
     ((match-whole *rematch-number* str) (read-from-string str))
-    ((match-whole *rematch-symbol* str) (str-to-symbol str))
+    ((string= "nil" str) nil)
+    ((string= "true" str) t)
+    ((match-whole *rematch-symbol* str) (make-smp-symbol str))
     ((match-whole *rematch-single-string* str) (str-to-strtoken1 str))
     ((match-whole *rematch-double-string* str) (str-to-strtoken2 str))
     ((or (eq (char str 0) #\') (eq (char str 0) #\"))
@@ -131,65 +133,11 @@
     (t (drop-paren-group-rec (cdr tokens) paren-count))))
 
 
-;;; Takens a list of tokens and adds depth. That is, 
-;;; tokens between parentheses are converted to lists.
-;;;
-;;; ("a" "(" "b" "c" ")") => ("a" ("b" "c"))
-;;;
-;;; TODO: This should go up a level when it hits a close paren.
-(defun add-depth-old (tokens)
-  (cond
-    ((null tokens) nil)
-    ((and (typep (car tokens) 'smp-symbol)
-t          (string= (slot-value (car tokens) 'name) "("))
-      (cons (add-depth (butlast (cdr (take-paren-group tokens))))
-	    (add-depth (drop-paren-group tokens))))
-    (t (cons (car tokens) (add-depth (cdr tokens))))))
-
-;;; Moves through the token list, converting anything between parenthesis 
-;;; tokens into an actual list.
-(defun add-depth (tokens)
-  (car (add-depth-rec tokens 0 0)))
-
-(defmacro add-depth-repeated-code ()
-  `(let ((pair (add-depth-rec (cdr tokens) depth (+ count 1))))
-    (cons (cons (car tokens) (car pair)) (cdr pair))))
-
-;;; Keeps track of depth to determine whether an open or close parenthesis is 
-;;; appropriate. Counts the number of tokens to properly account for when the 
-;;; function recursively converts tokens to an inner list.
-;;; 
-;;; return: A cons cell where the car is the current depth-added list and the 
-;;;   cdr is the token count.
-(defun add-depth-rec (tokens depth count)
-  (if (null tokens)
-    (if (= depth 0) (cons nil count)
-      (error 'mismatched-parentheses-error :message 
-	     "unmatched open parenthesis"))
-    (if (typep (car tokens) 'smp-symbol)
-      (cond
-        ((symbol= (car tokens) "(")
-          (let ((inner-pair (add-depth-rec (cdr tokens) (+ depth 1) 0)))
-	    (let ((pair
-              (add-depth-rec (nthcdr (+ 1 (cdr inner-pair))
-			       (cdr tokens)) depth 
-			       (+ count (cdr inner-pair) 2))))
-	      (cons (cons (car inner-pair) (car pair)) (cdr pair)))))
-	  ((symbol= (car tokens) ")")
-	    (if (= depth 0)
-	      (error 'mismatched-parentheses-error :message
-		     "unmatched close parenthesis")
-              (cons nil count)))
-        (t (add-depth-repeated-code)))
-      (add-depth-repeated-code))))
- 
-;;; Precompiles the tokens into s-expression form, removing syntactic sugar 
-;;; and creating initial bindings.
-(defun precompile (tokens) tokens)
-
+;;; Takes a string, splits it into token strings, and converts token strings 
+;;; to internal tokens.
 (defun parse-string (str)
   (handler-case
-    (add-depth (strings-to-tokens (remove-comments (split-string str))))
+    (strings-to-tokens (remove-comments (split-string str)))
     (compile-error (ce)
       (format nil "~a: ~a" ce (slot-value ce 'message)))))
 

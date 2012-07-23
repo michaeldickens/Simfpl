@@ -12,10 +12,10 @@
 /* 
  * A Note on Naming Conventions
  * 
- * Some functions begin with smpobj_ and others begin with obj_. The difference 
+ * Some functions begin with smpObject_ and others begin with obj_. The difference 
  * is this.
  * 
- * smpobj_: Functions that can be called on an object of type Object.
+ * smpObject_: Functions that can be called on an object of type Object.
  * 
  * obj_: Functions that can be called on any object, and will respect that 
  *   object's type. Even if the object is not of type Object, it will still 
@@ -26,7 +26,7 @@
 /* 
  * The SmpType structure used to define types.
  */
-typedef struct smptype_struct {
+typedef struct smpType_struct {
 	char *name;
 	
 	/* Every type has a unique ID. This allows types to be quickly compared to 
@@ -56,7 +56,7 @@ typedef struct smptype_struct {
 	int fundamentalp : 1;
 
 	
-	struct smptype_struct **parents;
+	struct smpType_struct **parents;
 	size_t parents_length;
 	
 	struct minihash_struct *instance_funs;
@@ -109,9 +109,9 @@ typedef struct obj_struct {
 /* Checks that an object is the right type. If it is not, throws an exception.
  */
 #define smp_type_check(obj, type_str) \
-	if (!smpobj_instancep_cstr((obj).type, type_str)) { \
-		if (smptype_name_eq(obj, "Thrown")) return (obj); \
-		return smpglobal_throw(smptypeerr_init( \
+	if (!smpObject_instancep_cstr((obj).type, (type_str))) { \
+		if (smpType_name_eq(obj, "Thrown")) return (obj); \
+		return smpGlobal_throw(smpTypeError_init( \
 				&obj_core(SmpType, smp_getclass(type_str)), \
 				(obj))); \
 	}
@@ -119,20 +119,20 @@ typedef struct obj_struct {
 /* Checks to see if the object is Thrown. If it is, returns it.
  */
 #define check_for_thrown(obj, clean_up) \
-	if (smptype_name_eq(obj, "Thrown")) { \
+	if (smpType_name_eq(obj, "Thrown")) { \
 		clean_up; \
 		return obj; \
 	}
 
-#define smptype_id_get(name) ((int) minihash_get(&smptype_ids, name).core)
+#define smpType_id_get(name) ((int) minihash_get(&smpType_ids, name).core)
 
 /* Returns TRUE if the type of obj is equal to str.
  */
-#define smptype_name_eq(obj, str) streq((obj).type->name, (str))
+#define smpType_name_eq(obj, str) streq((obj).type->name, (str))
 
 /* Returns TRUE if the type of obj is equal to type_id.
  */
-#define smptype_id_eq(obj, id) ((obj).type->type_id == (id))
+#define smpType_id_eq(obj, id) ((obj).type->type_id == (id))
 
 Object obj_init(SmpType *type);
 
@@ -161,58 +161,60 @@ Object objid_init(int type_id);
 Object obj_eq(Object obj1, Object obj2);
 Object obj_types_equalp(Object obj1, Object obj2);
 
-Object smpobj_clear(Object obj, int argc, Object argv[]);
+Object smpObject_clear(Object obj, int argc, Object argv[]);
 
 /* 
  * Conses two elements together. If the cdr element is a List, the return type 
  * is a List. Otherwise, the return type is a Pair.
  */
-Object smpobj_cons(Object obj, int argc, Object argv[]);
-Object smpobj_cons_c(Object car, Object cdr);
+Object smpObject_cons(Object obj, int argc, Object argv[]);
+Object smpObject_cons_c(Object car, Object cdr);
 
-Object smpobj_eq(Object obj, int argc, Object argv[]);
-Object smpobj_eql(Object obj, int argc, Object argv[]);
-Object smpobj_equalp(Object obj, int argc, Object argv[]);
+Object smpObject_eq(Object obj, int argc, Object argv[]);
+Object smpObject_eql(Object obj, int argc, Object argv[]);
+Object smpObject_equalp(Object obj, int argc, Object argv[]);
 
 /* 
  * Calls a function. Does not check whether the user has permission to call the 
  * function, so permission checking must be done before this point.
  */
-Object smpobj_funcall(Object obj, char *name, int argc, Object argv[]);
+Object smpObject_funcall(Object obj, char *name, int argc, Object argv[]);
 
-Object smpobj_getclass(Object obj, int argc, Object argv[]);
-Object smpobj_get_fun(Object obj, char *name);
-Object smpobj_get_fun_rec(SmpType *type, char *name, int instance_funp);
+/* argv[0]: A Function.
+ * argv[1]: A List containing the arguments.
+ */
+Object smpObject_funcall_arg(Object obj, int argc, Object argv[]);
 
-Object smpobj_gc_mark(Object obj, int argc, Object argv[]);
-Object smpobj_hash(Object obj, int argc, Object argv[]);
+Object smpObject_getclass(Object obj, int argc, Object argv[]);
+Object smpObject_get_fun(Object obj, char *name);
+Object smpObject_get_fun_rec(SmpType *type, char *name, int instance_funp);
+
+Object smpObject_gc_mark(Object obj, int argc, Object argv[]);
+Object smpObject_hash(Object obj, int argc, Object argv[]);
 
 /* Determines if the object is an instance of the class argv[0]. */
-Object smpobj_instancep(Object obj, int argc, Object argv[]);
-int smpobj_instancep_cint(Object obj, int argc, Object argv[]);
-int smpobj_instancep_c(SmpType *objtype, SmpType type);
-int smpobj_instancep_cstr(SmpType *objtype, char *type);
+Object smpObject_instancep(Object obj, int argc, Object argv[]);
+int smpObject_instancep_cint(Object obj, int argc, Object argv[]);
+int smpObject_instancep_c(SmpType *objtype, SmpType type);
+int smpObject_instancep_cstr(SmpType *objtype, char *type);
 
 /* Converts the object to a string in human-readable format.
  */
-Object smpobj_to_s(Object obj, int argc, Object argv[]);
+Object smpObject_to_s(Object obj, int argc, Object argv[]);
 
 /* A class function to convert the class to a string.
  */
-Object smpobj_to_s_class(Object obj, int argc, Object argv[]);
+Object smpObject_to_s_class(Object obj, int argc, Object argv[]);
 
-Object smpobj_truep(Object obj, int argc, Object argv[]);
-int smpobj_truep_c(Object obj);
+Object smpObject_type(Object obj, int argc, Object argv[]);
 
-Object smpobj_type(Object obj, int argc, Object argv[]);
-
-Object smpobj_types_equalp(Object obj, int argc, Object argv[]);
-Object smpobj_varcall(Object obj, char *name);
+Object smpObject_types_equalp(Object obj, int argc, Object argv[]);
+Object smpObject_varcall(Object obj, char *name);
 
 /* Converts the object to a string in computer format.
  */
-Object smpobj_write(Object obj, int argc, Object argv[]);
-Object smpobj_write_class(Object obj, int argc, Object argv[]);
+Object smpObject_write(Object obj, int argc, Object argv[]);
+Object smpObject_write_class(Object obj, int argc, Object argv[]);
 
 
 /* 
@@ -328,15 +330,16 @@ typedef struct standardcore_struct {
  * makes sense to put them as global variables, so they don't have to be 
  * reinitialized every time someone wants to use one of them.
  */
-SmpType smptype_object, smptype_id, smptype_nil, smptype_class, smptype_function, 
-	smptype_global, smptype_thrown, smptype_exception, smptype_string, 
-	smptype_pair, smptype_list, smptype_atom, smptype_collection, 
-	smptype_regmatch;
+SmpType smpType_object, smpType_id, smpType_nil, smpType_class, 
+	smpType_function, smpType_global, smpType_thrown, smpType_exception, 
+	smpType_string, smpType_pair, smpType_list, smpType_atom, 
+	smpType_collection, smpType_regmatch;
+
 Object smp_nil, smp_true, smp_global;
 
-int smptype_id_nil, smptype_id_class, smptype_id_int, smptype_id_float, 
-		smptype_id_fun, smptype_id_list, smptype_id_array, smptype_id_hash, 
-		smptype_id_var;
+int smpType_id_nil, smpType_id_class, smpType_id_int, smpType_id_float, 
+		smpType_id_fun, smpType_id_list, smpType_id_array, smpType_id_hash, 
+		smpType_id_var, smpType_id_thrown;
 
 
 

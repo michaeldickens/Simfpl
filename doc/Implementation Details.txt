@@ -1,34 +1,49 @@
 ***Precedence Evaluation***
 
-3 * 7 + 5 | 6 + 8 * 2**4
+3 * 7 + 5 | 6**3 + 8 * 2**4
 
-Read each function. If the next one has lower or equal precedence (assuming left association), evaluate each function, moving to the left. If not, move to the next one.
+Read each function. If the next one has lower precedence (or equal precedence and left association), parenthesize the function and move left. If not, move to the next one.
 
-3 * 7 + 5 | 6 + 8 * 2**4
+3 * 7 + 5 | 2 + 6**3 + 8 * 2**4
   ^
 
-(3 * 7) + 5 | 6 + 8 * 2**4
+(3 * 7) + 5 | 2 + 6**3 + 8 * 2**4
         ^
 
-((3 * 7) + 5) | 6 + 8 * 2**4
+((3 * 7) + 5) | 2 + 6**3 + 8 * 2**4
               ^
 
-((3 * 7) + 5) | 6 + 8 * 2**4
+((3 * 7) + 5) | 2 + 6**3 + 8 * 2**4
+                  ^ 
+
+((3 * 7) + 5) | 2 + 6**3 + 8 * 2**4
+                     ^
+
+((3 * 7) + 5) | 2 + (6**3) + 8 * 2**4
                   ^
 
-((3 * 7) + 5) | 6 + 8 * 2**4
-                      ^
+((3 * 7) + 5) | (2 + (6**3)) + 8 * 2**4
+              ^
 
-((3 * 7) + 5) | 6 + 8 * 2**4
-                         ^
+((3 * 7) + 5) | (2 + (6**3)) + 8 * 2**4
+                             ^ 
 
-((3 * 7) + 5) | 6 + 8 * (2**4)
-                      ^
+((3 * 7) + 5) | (2 + (6**3)) + 8 * 2**4
+                                 ^
 
-((3 * 7) + 5) | 6 + (8 * (2**4))
-                  ^
+((3 * 7) + 5) | (2 + (6**3)) + 8 * 2**4
+                                    ^
 
-((3 * 7) + 5) | (6 + (8 * (2**4)))
+((3 * 7) + 5) | (2 + (6**3)) + 8 * (2**4)
+                                 ^
+
+((3 * 7) + 5) | (2 + (6**3)) + (8 * (2**4))
+                             ^
+
+((3 * 7) + 5) | ((2 + (6**3)) + (8 * (2**4)))
+              ^
+
+
 
 ***Source Code as Data***
 

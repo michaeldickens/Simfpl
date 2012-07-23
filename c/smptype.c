@@ -6,18 +6,16 @@
  *
  */
 
-#include "smp_classes.h"
-
-Object smptype_abstract_def(Object type, int scope, char *name, int argc, ...)
+Object smpType_abstract_def(Object type, int scope, char *name, int argc, ...)
 {
 	va_list ap;
 	va_start(ap, argc);
-	Object res = smptype_def(type, scope, name, smpfun_init_v(&smp_abstract_function, argc, ap));
+	Object res = smpType_def(type, scope, name, smpFunction_init_v(&smp_abstract_function, argc, ap));
 	va_end(ap);
 	return res;
 }
 
-Object smptype_clear(Object obj, int argc, Object argv[])
+Object smpType_clear(Object obj, int argc, Object argv[])
 {
 	SmpType type = obj_core(SmpType, obj);
 	
@@ -35,19 +33,19 @@ Object smptype_clear(Object obj, int argc, Object argv[])
 	return smp_nil;
 }
 
-Object smptype_def_general(Object type, int flags, char *name, Object obj)
+Object smpType_def_general(Object type, int flags, char *name, Object obj)
 {	
 	check_for_thrown(type, NULL);
 		
 	MiniHash *data = NULL;
-	if (!smptype_name_eq(type, "Class"))
-		return smpglobal_throw(smptypeerr_init(&smptype_class, type));
-	if ((flags & FUNVAR_FLAG) == FUNVAR_FUN && !smptype_name_eq(obj, "Function"))
-		return smpglobal_throw(smptypeerr_init(&smptype_function, obj));
+	if (!smpType_name_eq(type, "Class"))
+		return smpGlobal_throw(smpTypeError_init(&smpType_class, type));
+	if ((flags & FUNVAR_FLAG) == FUNVAR_FUN && !smpType_name_eq(obj, "Function"))
+		return smpGlobal_throw(smpTypeError_init(&smpType_function, obj));
 	
 	if ((flags & FUNVAR_FLAG) == FUNVAR_FUN) {
-		smpfun_name(obj) = smp_malloc(sizeof(char) * (strlen(name) + 1));
-		strcpy(smpfun_name(obj), name);
+		smpFunction_name(obj) = smp_malloc(sizeof(char) * (strlen(name) + 1));
+		strcpy(smpFunction_name(obj), name);
 		obj_core(SmpFun, obj).permission = flags & SCOPE_PERMISSION_FLAG;
 	}
 	
@@ -77,30 +75,30 @@ Object smptype_def_general(Object type, int flags, char *name, Object obj)
 	gc_stack_push(&obj);
 	minihash_add(data, name, obj);
 	
-	return smp_nil;
+	return obj;
 }
 
-Object smptype_def(Object type, int flags, char *name, Object fun)
+Object smpType_def(Object type, int flags, char *name, Object fun)
 {
-	return smptype_def_general(type, flags | FUNVAR_FUN, name, fun);
+	return smpType_def_general(type, flags | FUNVAR_FUN, name, fun);
 }
 
-Object smptype_defvar(Object type, int flags, char *name, Object var)
+Object smpType_defvar(Object type, int flags, char *name, Object var)
 {
-	return smptype_def_general(type, flags | FUNVAR_VAR, name, var);
+	return smpType_def_general(type, flags | FUNVAR_VAR, name, var);
 }
 
-Object smptype_equalp(Object obj, int argc, Object argv[])
+Object smpType_equalp(Object obj, int argc, Object argv[])
 {
-	if (smptype_name_eq(argv[0], "Class")) {
-		return smpbool_init(obj_core(SmpType, obj).type_id == 
+	if (smpType_name_eq(argv[0], "Class")) {
+		return smpBool_init(obj_core(SmpType, obj).type_id == 
 				obj_core(SmpType, argv[0]).type_id);
 	}
 	
 	return smp_nil;
 }
 
-Object smptype_gc_mark(Object obj, int argc, Object argv[])
+Object smpType_gc_mark(Object obj, int argc, Object argv[])
 {
 	minihash_each(obj_core(SmpType, obj).class_funs, 
 			&gc_mark_recursive);
@@ -116,10 +114,10 @@ Object smptype_gc_mark(Object obj, int argc, Object argv[])
 	return smp_nil;
 }
 
-Object smptype_relatedp(Object obj, int argc, Object argv[])
+Object smpType_relatedp(Object obj, int argc, Object argv[])
 {
 	SmpType *type1 = &obj_core(SmpType, obj);
 	SmpType type2 = obj_core(SmpType, argv[0]);
-	return smpbool_init(smpobj_instancep_c(type1, type2));
+	return smpBool_init(smpObject_instancep_c(type1, type2));
 }
 

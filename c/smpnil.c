@@ -6,48 +6,46 @@
  *
  */
 
-#include "smp_classes.h"
-
-int smpnil_create_class()
+int smpNil_create_class()
 {
 	Object nilclass = smp_getclass("Nil");
 	
-	smptype_def(nilclass, SCOPE_INSTANCE_DATA, "car", smpfun_init(&smpnil_car, 1, "Object"));
-	smptype_def(nilclass, SCOPE_INSTANCE_DATA, "cdr", smpfun_init(&smpnil_cdr, 1, "Object"));
-	smptype_def(nilclass, SCOPE_INSTANCE_DATA, "empty?", smpfun_init(&smpnil_emptyp, 1, "Bool"));
-	smptype_def(nilclass, SCOPE_INSTANCE_DATA, "equal?", smpfun_init(&smpnil_equalp, 2, "Bool", "Object"));
-	smptype_def(nilclass, SCOPE_INSTANCE_DATA, "to_s", smpfun_init(&smpnil_to_s, 1, "String"));
-	smptype_def(nilclass, SCOPE_INSTANCE_DATA, "write", smpfun_init(&smpnil_write, 1, "String"));
+	smpType_def(nilclass, SCOPE_INSTANCE_DATA, "car", smpFunction_init(&smpNil_car, 1, "Object"));
+	smpType_def(nilclass, SCOPE_INSTANCE_DATA, "cdr", smpFunction_init(&smpNil_cdr, 1, "Object"));
+	smpType_def(nilclass, SCOPE_INSTANCE_DATA, "empty?", smpFunction_init(&smpNil_emptyp, 1, "Bool"));
+	smpType_def(nilclass, SCOPE_INSTANCE_DATA, "equal?", smpFunction_init(&smpNil_equalp, 2, "Bool", "Object"));
+	smpType_def(nilclass, SCOPE_INSTANCE_DATA, "to_s", smpFunction_init(&smpNil_to_s, 1, "String"));
+	smpType_def(nilclass, SCOPE_INSTANCE_DATA, "write", smpFunction_init(&smpNil_write, 1, "String"));
 	
 	return 0;
 }
 
-Object smpnil_car(Object obj, int argc, Object argv[])
+Object smpNil_car(Object obj, int argc, Object argv[])
 {
 	return smp_nil;
 }
 
-Object smpnil_cdr(Object obj, int argc, Object argv[])
+Object smpNil_cdr(Object obj, int argc, Object argv[])
 {
 	return smp_nil;
 }
 
-Object smpnil_emptyp(Object obj, int argc, Object argv[])
+Object smpNil_emptyp(Object obj, int argc, Object argv[])
 {
 	return smp_nil;
 }
 
-Object smpnil_equalp(Object obj, int argc, Object argv[])
+Object smpNil_equalp(Object obj, int argc, Object argv[])
 {
-	return smpbool_init(smpobj_truep_c(argv[0]) == FALSE);
+	return smpBool_init(smpObject_truep_c(argv[0]) == FALSE);
 }
 
-Object smpnil_to_s(Object obj, int argc, Object argv[])
+Object smpNil_to_s(Object obj, int argc, Object argv[])
 {
-	return smpstr_init("nil");
+	return smpString_init("nil");
 }
 
-Object smpnil_write(Object obj, int argc, Object argv[])
+Object smpNil_write(Object obj, int argc, Object argv[])
 {
-	return smpstr_init("nil");
+	return smpString_init("nil");
 }

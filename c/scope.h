@@ -42,6 +42,10 @@ int scope_pop();
  */
 int scope_add(char *name, Object obj);
 
+/* Pulls and object off of the current scope.
+ */
+Object scope_get(char *name);
+
 /* Returns (self) from the current scope.
  */
 Object scope_self();

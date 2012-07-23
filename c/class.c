@@ -6,11 +6,9 @@
  *
  */
 
-#include "smp_classes.h"
-
 int smp_putclass(SmpType type)
 {
-	Object wrapper = obj_init(&smptype_class);
+	Object wrapper = obj_init(&smpType_class);
 	wrapper.frozenp = TRUE;
 	wrapper.core = smp_malloc(sizeof(SmpType));
 	
@@ -28,14 +26,14 @@ Object smp_getclass(char *name)
 
 Object smp_abstract_function(Object obj, int argc, Object argv[])
 {
-	return smpglobal_throw(smpexc_init_fmt(
+	return smpGlobal_throw(smpException_init_fmt(
 			smp_getclass("ImplementationException"), 
 			"Cannot call an abstract function."));
 }
 
 Object smp_unimplemented_function(Object obj, int argc, Object argv[])
 {
-	return smpglobal_throw(smpexc_init_fmt(
+	return smpGlobal_throw(smpException_init_fmt(
 			smp_getclass("ImplementationException"), 
 			"default unimplemented function"));
 }

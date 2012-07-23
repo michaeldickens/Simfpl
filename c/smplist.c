@@ -6,26 +6,26 @@
  *
  */
 
-#include "smp_classes.h"
-
-int smplist_create_class()
+int smpList_create_class()
 {
 	Object listclass = smp_getclass("List");
 	
-	smptype_def(listclass, SCOPE_INSTANCE_DATA | SCOPE_INTERNAL, "gc_mark", smpfun_init(&smplist_gc_mark, 1, "Nil"));
-	smptype_def(listclass, SCOPE_INSTANCE_DATA, "add!", smpfun_init(&smplist_add_now, 2, "List", "Object"));
-	smptype_def(listclass, SCOPE_INSTANCE_DATA, "car", smpfun_init(&smplist_car, 1, "Object"));
-	smptype_def(listclass, SCOPE_INSTANCE_DATA, "cdr", smpfun_init(&smplist_cdr, 1, "Object"));
-	smptype_def(listclass, SCOPE_INSTANCE_DATA, "empty?", smpfun_init(&smplist_emptyp, 1, "Bool"));
-	smptype_def(listclass, SCOPE_INSTANCE_DATA, "equal?", smpfun_init(&smplist_equalp, 2, "Bool", "Object"));
-	smptype_def(listclass, SCOPE_INSTANCE_DATA, "length", smpfun_init(&smplist_length, 1, "Integer"));
-	smptype_def(listclass, SCOPE_INSTANCE_DATA, "to_s", smpfun_init(&smplist_to_s, 1, "String"));
-	smptype_def(listclass, SCOPE_INSTANCE_DATA, "write", smpfun_init(&smplist_write, 1, "String"));
+	smpType_def(listclass, SCOPE_INSTANCE_DATA | SCOPE_INTERNAL, "gc_mark", smpFunction_init(&smpList_gc_mark, 1, "Nil"));
+	smpType_def(listclass, SCOPE_INSTANCE_DATA, "add!", smpFunction_init(&smpList_add_now, 2, "List", "Object"));
+	smpType_def(listclass, SCOPE_INSTANCE_DATA, "car", smpFunction_init(&smpList_car, 1, "Object"));
+	smpType_def(listclass, SCOPE_INSTANCE_DATA, "cdr", smpFunction_init(&smpList_cdr, 1, "Object"));
+	smpType_def(listclass, SCOPE_INSTANCE_DATA, "empty?", smpFunction_init(&smpList_emptyp, 1, "Bool"));
+	smpType_def(listclass, SCOPE_INSTANCE_DATA, "equal?", smpFunction_init(&smpList_equalp, 2, "Bool", "Object"));
+	smpType_def(listclass, SCOPE_INSTANCE_DATA, "length", smpFunction_init(&smpList_length, 1, "Integer"));
+	smpType_def(listclass, SCOPE_INSTANCE_DATA, "map", smpFunction_init(&smpList_map, 2, "List", "Function"));
+	smpType_def(listclass, SCOPE_INSTANCE_DATA, "reduce", smpFunction_init(&smpList_reduce, 4, "List", "Function", "&optional", "Object"));
+	smpType_def(listclass, SCOPE_INSTANCE_DATA, "to_s", smpFunction_init(&smpList_to_s, 1, "String"));
+	smpType_def(listclass, SCOPE_INSTANCE_DATA, "write", smpFunction_init(&smpList_write, 1, "String"));
 	
 	return 0;
 }
 
-Object smplist_add_now(Object obj, int argc, Object argv[])
+Object smpList_add_now(Object obj, int argc, Object argv[])
 {
 	Object *ptr = &obj;
 	while (TRUE) {
@@ -35,84 +35,84 @@ Object smplist_add_now(Object obj, int argc, Object argv[])
 	}
 	
 	SmpList *list_core = &obj_core(SmpList, *ptr);	
-	Object cons_cell = smpobj_cons_c(argv[0], smp_nil);
+	Object cons_cell = smpObject_cons_c(argv[0], smp_nil);
 	list_core->cdr = smp_malloc(sizeof(Object));
 	*list_core->cdr = cons_cell;
 	return obj;
 }
 
-Object smplist_car(Object obj, int argc, Object argv[])
+Object smpList_car(Object obj, int argc, Object argv[])
 {
 	return obj_core(SmpList, obj).car;
 }
 
-Object smplist_cdr(Object obj, int argc, Object argv[])
+Object smpList_cdr(Object obj, int argc, Object argv[])
 {
 	Object *cdr = obj_core(SmpList, obj).cdr;
 	return obj_deref(cdr);
 }
 
-Object smplist_each(Object obj, int argc, Object argv[])
+Object smpList_each(Object obj, int argc, Object argv[])
 {
-	smplist_check_nil(obj);
+	smpList_check_nil(obj);
 	smp_type_check(argv[0], "Function");
 	
 	SmpList *list = (SmpList *) obj.core;
 	Object code;
 	Object *rest;
 	while (list) {
-		code = smpfun_call(smp_getclass("Global"), argv[0], 1, &list->car);
+		code = smpFunction_call(smp_getclass("Global"), argv[0], 1, &list->car);
 		check_for_thrown(code, NULL);
 		
 		rest = list->cdr;
 		
 		if (rest == NULL) {
 			break;
-		} else if (smptype_id_eq(*rest, smptype_id_list)) {
+		} else if (smpType_id_eq(*rest, smpType_id_list)) {
 			list = (SmpList *) rest->core;
 		} else {
-			return smpglobal_throw(smptypeerr_init(obj.type, *rest));
+			return smpGlobal_throw(smpTypeError_init(obj.type, *rest));
 		}
 	}
 	
 	return smp_nil;
 }
 
-Object smplist_emptyp(Object obj, int argc, Object argv[])
+Object smpList_emptyp(Object obj, int argc, Object argv[])
 {
 	return smp_nil;
 }
 
-Object smplist_equalp(Object obj, int argc, Object argv[])
+Object smpList_equalp(Object obj, int argc, Object argv[])
 {
-	if (smptype_name_eq(argv[0], "List") == FALSE) {
+	if (smpType_name_eq(argv[0], "List") == FALSE) {
 		return smp_nil;
 	}
 	
 	Object list1 = obj, list2 = argv[0];
 	Object car1, car2;
 	
-	if (smplist_length_clong(list1) != smplist_length_clong(list2)) {
+	if (smpList_length_clong(list1) != smpList_length_clong(list2)) {
 		return smp_nil;
 	}
 	
-	while (smptype_id_eq(list1, smptype_id_nil) == FALSE) {
-		car1 = smplist_car_c(list1);
-		car2 = smplist_car_c(list2);
+	while (smpType_id_eq(list1, smpType_id_nil) == FALSE) {
+		car1 = smpList_car_c(list1);
+		car2 = smpList_car_c(list2);
 		
-		if (smpobj_truep_c(smpobj_funcall(car1, "equal?", 1, &car2)) == FALSE)
+		if (smpObject_truep_c(smpObject_funcall(car1, "equal?", 1, &car2)) == FALSE)
 			return smp_nil;
 		
-		list1 = smplist_cdr_c(list1);
-		list2 = smplist_cdr_c(list2);
+		list1 = smpList_cdr_c(list1);
+		list2 = smpList_cdr_c(list2);
 	}
 	
 	return smp_true;
 }
 
-Object smplist_gc_mark(Object obj, int argc, Object argv[])
+Object smpList_gc_mark(Object obj, int argc, Object argv[])
 {
-	smplist_check_nil(obj);
+	smpList_check_nil(obj);
 	Object *ptr = &obj;
 	while (ptr) {
 		gc_mark_recursive(NULL, obj_core(SmpList, *ptr).car);
@@ -122,22 +122,22 @@ Object smplist_gc_mark(Object obj, int argc, Object argv[])
 	return smp_nil;
 }
 
-Object smplist_init(SmpList list)
+Object smpList_init(SmpList list)
 {
-	Object res = obj_init(&smptype_list);
+	Object res = obj_init(&smpType_list);
 	res.core = smp_malloc(sizeof(SmpList));
 	obj_core(SmpList, res) = list;
 	return res;
 }
 
-Object smplist_get(Object obj, int argc, Object argv[])
+Object smpList_get(Object obj, int argc, Object argv[])
 {
 	smp_type_check(argv[0], "Integer");
-	long index = smpint_to_clong(argv[0]);
-	return smplist_get_clong(obj, index);
+	long index = smpInteger_to_clong(argv[0]);
+	return smpList_get_clong(obj, index);
 }
 
-Object smplist_get_clong(Object obj, long index)
+Object smpList_get_clong(Object obj, long index)
 {
 	Object *ptr = &obj;
 	
@@ -147,18 +147,18 @@ Object smplist_get_clong(Object obj, long index)
 		
 		if (ptr == NULL)
 			break;
-		else if (smptype_id_eq(*ptr, smptype_id_list) == FALSE)
-			return smpglobal_throw(smptypeerr_init(obj.type, *ptr));			
+		else if (smpType_id_eq(*ptr, smpType_id_list) == FALSE)
+			return smpGlobal_throw(smpTypeError_init(obj.type, *ptr));			
 	}
 	
 	if (ptr) return obj_core(SmpList, *ptr).car;
 	else return smp_nil;
 }
 
-Object smplist_length(Object obj, int argc, Object argv[])
+Object smpList_length(Object obj, int argc, Object argv[])
 {
-	if (smptype_id_eq(obj, smptype_id_nil))
-		return smpint_init_clong(0);
+	if (smpType_id_eq(obj, smpType_id_nil))
+		return smpInteger_init_clong(0);
 	
 	long length = 0;
 	SmpList *list = (SmpList *) obj.core;
@@ -168,19 +168,19 @@ Object smplist_length(Object obj, int argc, Object argv[])
 		rest = list->cdr;
 		if (rest == NULL) {
 			break;
-		} else if (smptype_id_eq(*rest, smptype_id_list)) {
+		} else if (smpType_id_eq(*rest, smpType_id_list)) {
 			list = (SmpList *) rest->core;
 		} else {
-			return smpglobal_throw(smptypeerr_init(obj.type, *rest));
+			return smpGlobal_throw(smpTypeError_init(obj.type, *rest));
 		}
 	}
 	
-	return smpint_init_clong(length);
+	return smpInteger_init_clong(length);
 }
 
-long smplist_length_clong(Object obj)
+long smpList_length_clong(Object obj)
 {
-	if (smptype_id_eq(obj, smptype_id_nil))
+	if (smpType_id_eq(obj, smpType_id_nil))
 		return 0;
 	
 	long length = 0;
@@ -193,9 +193,9 @@ long smplist_length_clong(Object obj)
 	return length;
 }
 
-Object smplist_map(Object obj, int argc, Object argv[])
+Object smpList_map(Object obj, int argc, Object argv[])
 {
-	smplist_check_nil(obj);
+	smpList_check_nil(obj);
 	smp_type_check(argv[0], "Function");
 	DISABLE_GC_ACTIVEP;
 	
@@ -204,16 +204,16 @@ Object smplist_map(Object obj, int argc, Object argv[])
 	Object *ptr = &obj;
 	Object car, called;
 	while (ptr) {
-		car = smplist_car(*ptr, 0, NULL);
-		called = smpfun_call(smp_global, argv[0], 1, &car);
+		car = smpList_car(*ptr, 0, NULL);
+		called = smpFunction_call(smp_global, argv[0], 1, &car);
 		check_for_thrown(called, ENABLE_GC_ACTIVEP);
 		
 		if (last.core == smp_nil.core) {
-			last = res = smpobj_cons(called, 1, &smp_nil);
+			last = res = smpObject_cons(called, 1, &smp_nil);
 		} else {
 			obj_core(SmpList, last).cdr = smp_malloc(sizeof(Object));
 			last = *obj_core(SmpList, last).cdr = 
-					smpobj_cons(called, 1, &smp_nil);
+					smpObject_cons(called, 1, &smp_nil);
 			check_for_thrown(last, ENABLE_GC_ACTIVEP);
 		}
 		
@@ -224,50 +224,80 @@ Object smplist_map(Object obj, int argc, Object argv[])
 	return res;
 }
 
-Object smplist_to_s(Object obj, int argc, Object argv[])
+Object smpList_reduce(Object obj, int argc, Object argv[])
+{
+	Object initial = smp_nil;
+	Object fun = argv[0];
+	if (argc > 1) {
+		initial = argv[1];
+	} else {
+		initial = smpList_car_c(obj);
+	}
+	smp_type_check(fun, "Function");
+	
+	DISABLE_GC_ACTIVEP;
+	
+	Object pair[2];
+	pair[0] = initial;
+	
+	while (smpObject_truep_c(obj)) {
+		pair[1] = smpList_car_c(obj);
+		
+		pair[0] = smpFunction_call(smp_global, fun, 2, pair);
+		check_for_thrown(pair[0], ENABLE_GC_ACTIVEP);
+		
+		obj = smpList_cdr_c(obj);
+	}
+	
+	ENABLE_GC_ACTIVEP;
+	return pair[0];
+}
+
+Object smpList_to_s(Object obj, int argc, Object argv[])
 {
 	DISABLE_GC_ACTIVEP;
 	
-	Object res = smpstr_init("(");
-	Object divider = smpstr_init(" ");
+	Object res = smpString_init("(");
+	Object divider = smpString_init(" ");
 		
 	Object str2;
 	Object *ptr = &obj;
 	int first_timep = TRUE;
 	while (ptr) {
-		str2 = smpobj_funcall(smplist_car(*ptr, 0, NULL), "to_s", argc, argv);
+		str2 = smpObject_funcall(smpList_car(*ptr, 0, NULL), "to_s", 0, NULL);
+		check_for_thrown(str2, ENABLE_GC_ACTIVEP);
 		if (first_timep == FALSE)
-			smpstr_add_now(res, 1, &divider);
-		smpstr_add_now(res, 1, &str2);
+			smpString_add_now(res, 1, &divider);
+		smpString_add_now(res, 1, &str2);
 		ptr = obj_core(SmpList, *ptr).cdr;
 		first_timep = FALSE;
 	}
 	
-	Object paren = smpstr_init(")");
-	smpstr_add_now(res, 1, &paren);
+	Object paren = smpString_init(")");
+	smpString_add_now(res, 1, &paren);
 	
 	ENABLE_GC_ACTIVEP;
 	return res;
 }
 
-Object smplist_write(Object obj, int argc, Object argv[])
+Object smpList_write(Object obj, int argc, Object argv[])
 {
 	DISABLE_GC_ACTIVEP;
 	
-	Object res = smpstr_init("(list");
-	Object divider = smpstr_init(" ");
+	Object res = smpString_init("(list");
+	Object divider = smpString_init(" ");
 	
 	Object str2;
 	Object *ptr = &obj;
 	while (ptr) {
-		str2 = smpobj_funcall(smplist_car(*ptr, 0, NULL), "write", argc, argv);
-		smpstr_add_now(res, 1, &divider);
-		smpstr_add_now(res, 1, &str2);
+		str2 = smpObject_funcall(smpList_car(*ptr, 0, NULL), "write", argc, argv);
+		smpString_add_now(res, 1, &divider);
+		smpString_add_now(res, 1, &str2);
 		ptr = obj_core(SmpList, *ptr).cdr;
 	}
 	
-	Object paren = smpstr_init(")");
-	smpstr_add_now(res, 1, &paren);
+	Object paren = smpString_init(")");
+	smpString_add_now(res, 1, &paren);
 	
 	ENABLE_GC_ACTIVEP;
 	return res;

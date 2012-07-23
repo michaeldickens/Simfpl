@@ -1,0 +1,1 @@
+llc user.ll -disable-cfi && gcc -O3 main.s user.s -lgmp -lmpfr -w && ./a.out

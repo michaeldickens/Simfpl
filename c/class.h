@@ -39,6 +39,8 @@
 #define CLASS_FUNDAMENTAL 0x80
 
 /* Scope flags for functions.
+ * WARNING: These must not be changed because the literal values are used 
+ * by the Simfpl compiler.
  */
 #define SCOPE_DATA_FLAG 0xf
 #define SCOPE_INSTANCE_DATA 0x0

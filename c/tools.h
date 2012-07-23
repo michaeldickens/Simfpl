@@ -27,7 +27,7 @@
 
 struct membatch_stack {
 	struct obj_struct *object[MEMBATCH_SIZE];
-	struct smplist_struct *smplist[MEMBATCH_SIZE];
+	struct smpList_struct *smplist[MEMBATCH_SIZE];
 };
 
 void * smp_malloc(size_t bytes);

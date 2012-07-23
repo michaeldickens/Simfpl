@@ -1,0 +1,7 @@
+{
+$nums = (list 0)
+while (($nums car) < 10000) ($nums = ((($nums car) + 1) cons $nums))
+
+# expected result is 2**10001 - 1
+println (($nums map ((x) => (2 ** x))) reduce ((x y) => (x + y)) 0)
+}

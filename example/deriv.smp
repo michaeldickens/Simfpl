@@ -5,8 +5,8 @@
 	class ObjectBind {
 		obj, symbol
 		
-		def init(obj, symbol) => (self.obj = obj; self.symbol = symbol)
-		def match(x) => obj.match(x)
+		def init(obj, symbol) (self.obj = obj; self.symbol = symbol)
+		def match(x) obj.match(x)
 	}
 	
 	Inside a case expression, if an ObjectBind is found, creates a temporary 
@@ -14,7 +14,7 @@
 	expression; then binds the matched value to that variable.
 ##
 
-def deriv(fun) => {
+def deriv(fun) {
 	simplify case fun
 		Number -> 0
 		Symbol -> 1
@@ -26,7 +26,7 @@ def deriv(fun) => {
 		`(#Function.bind(f) #Object.bind(x)) -> `(#(deriv x) * (#(deriv_fun f) #x))
 }
 
-def simplify(exp) => {
+def simplify(exp) {
 	case (exp map (sub_exp) => (simplify sub_exp))
 		`(1 * #Object.bind(x)) -> x
 		`(0 + #Object.bind(x)) -> x
@@ -38,7 +38,7 @@ def simplify(exp) => {
 		
 }
 
-def deriv_fun(fun) => {
+def deriv_fun(fun) {
 	case fun
 		Math.log -> 1 / 	# This works, thanks to currying
 		Math.sin -> Math.cos

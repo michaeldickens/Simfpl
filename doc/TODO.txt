@@ -1,19 +1,31 @@
 ***TODO***
 
-General
- + Write a syntax analyzer.
- * Implement a garbage collector in LLVM.
- * Implement the basic Simfpl objects and functions in LLVM.
- * Write an intermediate code generator.
- * Write a code generator.
- * Write an optimizer.
+Compiler
+ * I changed smp-symbol-to-string so if it receives a string, it doesn't call (write-to-string) on it. This may have introduced bugs.
+ * Get floats to work.
+ * Compile numbers to gmp_set_str() instead of using native numbers.
+ * In (smp-compile), don't just print out the result. Instead, read in main.ll and append the result to it.
+ * Write the rest of the keyword macros.
+ * Special syntax: %s, %r, etc.
 
-Specific
- * Refactor the code in /c/ to work for compiled Simfpl. Remove all the code that works with the interpreter.
+
+Simfpl Library
+ * Add more functions.
+    - Integer: (all GMP number-theoretic functions)
+    - Array/List: at, concat[!], delete[!], delete_at[!], delete_if[!], drop[!], drop_while[!], each, each_index, index, filter[!], first, flatten[!], flatmap[!], hash, insert[!], join, last, map!, reverse[!], sort[!], take[!], take_while[!], to_a, to_list, uniq[!], zip
+ * Add classes: Range, Rational
+ * Make global variables of objects containing all of the classes.
 
 See individual files (search "TODO") for more.
 
 
 
 ***BUGS***
- * No known bugs.
+ * A lambda inside a function cannot access the function's variables.
+ * There is no way to differentiate between leaving off an optional argument and passing nil as the value for an optional argument.
+ * Because of the way (check-for-return-form) works, if Simfpl calls return(), it will return all the way up the call stack. It should return all the way up the call stack for an exception, but for a return() call, it should catch it in the first function.
+ * If a Simfpl keyword has too many arguments, it causes Lisp to fail ("odd number of &KEY arguments").
+ * In object-table.lisp, functions in self and Global must be declared, but not any others (I don't think, anyway).
+
+
+More bugs in c/README.txt

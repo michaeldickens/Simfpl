@@ -5,11 +5,11 @@
 ;;; Characters that always make up their own symbol and cannot be part of 
 ;;; another token.
 (defparameter *rematch-single-char* 
-  (concatenate 'string "[\\(\\),\\.\\[\\]\\{\\}" *newline* "]"))
+  (concatenate 'string "[\\(\\),`@\\.;:\\[\\]\\{\\}" *newline* "]"))
 
 ;;; Supports floating point, scientific notation, and negation, but not 
 ;;; any base other than 10.
-(defparameter *rematch-number* "(\\+|-)?\\d+(\\.\\d+)?([eE]\\d+)?")
+(defparameter *rematch-number* "-?\\d+(\\.\\d+)?([eE]\\d+)?")
 
 (defparameter *rematch-symbol* (concatenate 'string 
     *rematch-single-char* "|[^'\"#\\s\\d" 
@@ -17,10 +17,10 @@
         "]+"))
 
 ;;; Single-quoted string.
-(defparameter *rematch-single-string* "'([^']|(\\'))*'")
+(defparameter *rematch-single-string* "'((\\\\.)|[^'])*'")
 
-;;; Double-quoted string.
-(defparameter *rematch-double-string* "\"([^\"]|(\\\"))*\"")
+;;; Double-quoted string. TODO: I don't think this is correct.
+(defparameter *rematch-double-string* "\"((\\\\.)|[^\"])*\"")
 
 (defparameter *rematch-comment* (concatenate 'string 
   "#[^#" *newline* "]*" *newline* "|##([^#]*#?[^#]+)*##"))
@@ -69,7 +69,9 @@
 (defun string-to-token (str)
   (cond
     ((match-whole *rematch-number* str) (read-from-string str))
-    ((match-whole *rematch-symbol* str) (str-to-symbol str))
+    ((string= "nil" str) nil)
+    ((string= "true" str) t)
+    ((match-whole *rematch-symbol* str) (make-smp-symbol str))
     ((match-whole *rematch-single-string* str) (str-to-strtoken1 str))
     ((match-whole *rematch-double-string* str) (str-to-strtoken2 str))
     ((or (eq (char str 0) #\') (eq (char str 0) #\"))

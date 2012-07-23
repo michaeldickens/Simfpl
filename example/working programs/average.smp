@@ -1,0 +1,28 @@
+{
+def average(xs) {
+  $total = 0
+  $count = (xs length)
+  while xs {
+    $total = $total + (xs car)
+    xs = (xs cdr)
+  }
+
+  $total / $count
+}
+
+# average is 10
+println (Global average (list 8 10 9 9 14))
+}
+
+
+
+##
+This function also calculates the average of a list.
+##
+{
+def average(xs) (
+  (xs reduce ((x y) => (x + y)) 0) / (xs length))
+
+# average is 10
+println (Global average (list 8 10 9 9 14))
+}

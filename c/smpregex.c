@@ -6,15 +6,13 @@
  *
  */
 
-#include "smp_classes.h"
-
-int smpregex_create_class()
+int smpRegex_create_class()
 {	
-	smpglobal_class("RegexMatch", &smptype_object, 0);
+	smpGlobal_class("RegexMatch", &smpType_object, 0);
 	Object regmatch = smp_getclass("RegexMatch");
-	smptype_regmatch = obj_core(SmpType, regmatch);
+	smpType_regmatch = obj_core(SmpType, regmatch);
 	
-	smptype_def(regmatch, SCOPE_INSTANCE_DATA, "clear", smpfun_init(&smpregmatch_clear, 1, "Nil"));
+	smpType_def(regmatch, SCOPE_INSTANCE_DATA, "clear", smpFunction_init(&smpregmatch_clear, 1, "Nil"));
 	
 	return 0;
 }
@@ -26,87 +24,87 @@ Object smpregmatch_clear(Object obj, int argc, Object argv[])
 	return smp_nil;
 }
 
-Object smpregex_compile(regex_t *compiled, Object regex)
+Object smpRegex_compile(regex_t *compiled, Object regex)
 {
-	return smpregex_compile_flags(compiled, regex, REG_EXTENDED);
+	return smpRegex_compile_flags(compiled, regex, REG_EXTENDED);
 }
 
-Object smpregex_compile_flags(regex_t *compiled, Object regex, int flags)
+Object smpRegex_compile_flags(regex_t *compiled, Object regex, int flags)
 {
-	return smpregex_compile_str_flags(compiled, obj_core(SmpString, regex).s, 
+	return smpRegex_compile_str_flags(compiled, obj_core(SmpString, regex).s, 
 			flags);
 }
 
-Object smpregex_compile_str(regex_t *compiled, char *pattern)
+Object smpRegex_compile_str(regex_t *compiled, char *pattern)
 {
-	return smpregex_compile_str_flags(compiled, pattern, REG_EXTENDED);
+	return smpRegex_compile_str_flags(compiled, pattern, REG_EXTENDED);
 }
 
-Object smpregex_compile_str_flags(regex_t *compiled, char *pattern, int flags)
+Object smpRegex_compile_str_flags(regex_t *compiled, char *pattern, int flags)
 {
 	int code = regcomp(compiled, pattern, flags);
-	return smpregex_compile_handle_errors(pattern, code);
+	return smpRegex_compile_handle_errors(pattern, code);
 }
 
-Object smpregex_compile_handle_errors(char *pattern, int code)
+Object smpRegex_compile_handle_errors(char *pattern, int code)
 {
 	if (code == REG_BADBR)
-		return smpglobal_throw(smpexc_init_fmt(
+		return smpGlobal_throw(smpException_init_fmt(
 				smp_getclass("InitializationException"), 
 				"Regular expression \"%s\" had invalid '{...}' construct.", 
 					pattern));
 	if (code == REG_BADPAT)
-		return smpglobal_throw(smpexc_init_fmt(
+		return smpGlobal_throw(smpException_init_fmt(
 				smp_getclass("InitializationException"), 
 				"Syntax error in regular expression \"%s\".", 
 					pattern));
 	if (code == REG_BADRPT)
-		return smpglobal_throw(smpexc_init_fmt(
+		return smpGlobal_throw(smpException_init_fmt(
 				smp_getclass("InitializationException"), 
 				"In regular expression \"%s\", a repetition operator such as '?' or '*' appeared in a bad position.", 
 					pattern));
 	if (code == REG_ECOLLATE)
-		return smpglobal_throw(smpexc_init_fmt(
+		return smpGlobal_throw(smpException_init_fmt(
 				smp_getclass("InitializationException"), 
 				"Regular expression \"%s\" referred to an invalid collating element.", 
 					pattern));
 	if (code == REG_ECTYPE)
-		return smpglobal_throw(smpexc_init_fmt(
+		return smpGlobal_throw(smpException_init_fmt(
 				smp_getclass("InitializationException"), 
 				"Regular expression \"%s\" referred to an invalid character class name.", 
 					pattern));
 	if (code == REG_EESCAPE)
-		return smpglobal_throw(smpexc_init_fmt(
+		return smpGlobal_throw(smpException_init_fmt(
 				smp_getclass("InitializationException"), 
 				"Regular expression \"%s\" ended with '\\'.", 
 					pattern));
 	if (code == REG_ESUBREG)
-		return smpglobal_throw(smpexc_init_fmt(
+		return smpGlobal_throw(smpException_init_fmt(
 				smp_getclass("InitializationException"), 
 				"Regular expression \"%s\" had invalid number in the '\\digit' construct.", 
 					pattern));
 	if (code == REG_EBRACK)
-		return smpglobal_throw(smpexc_init_fmt(
+		return smpGlobal_throw(smpException_init_fmt(
 				smp_getclass("InitializationException"), 
 				"Regular expression \"%s\" had unbalanced square brackets.", 
 					pattern));
 	if (code == REG_EPAREN)
-		return smpglobal_throw(smpexc_init_fmt(
+		return smpGlobal_throw(smpException_init_fmt(
 				smp_getclass("InitializationException"), 
 				"Regular expression \"%s\" had unbalanced parentheses.", 
 					pattern));
 	if (code == REG_EBRACE)
-		return smpglobal_throw(smpexc_init_fmt(
+		return smpGlobal_throw(smpException_init_fmt(
 				smp_getclass("InitializationException"), 
 				"Regular expression \"%s\" had unbalanced curly braces.", 
 					pattern));
 	if (code == REG_ERANGE)
-		return smpglobal_throw(smpexc_init_fmt(
+		return smpGlobal_throw(smpException_init_fmt(
 				smp_getclass("InitializationException"), 
 				"In regular expression \"%s\", one of the endpoints in a range expression was invalid.", 
 					pattern));
 	if (code == REG_ESPACE)
-		return smpglobal_throw(smpexc_init_fmt(
+		return smpGlobal_throw(smpException_init_fmt(
 				smp_getclass("InitializationException"), 
 				"Ran out of memory while compiling regular expression \"%s\".", 
 					pattern));
@@ -128,22 +126,22 @@ Object smpregmatch_init(regmatch_t matches[], size_t length)
 	core.matches = smp_malloc(sizeof(regmatch_t) * core.length);
 	memcpy(core.matches, matches, sizeof(regmatch_t) * core.length);
 	
-	Object res = obj_init(&smptype_regmatch);
+	Object res = obj_init(&smpType_regmatch);
 	res.core = smp_malloc(sizeof(SmpRegexMatch));
 	obj_core(SmpRegexMatch, res) = core;
 	return res;
 }
 
-Object smpregex_match(Object obj, int argc, Object argv[])
+Object smpRegex_match(Object obj, int argc, Object argv[])
 {
-	return smpregex_match_str(smpstr_to_cstr(obj), argv[0]);
+	return smpRegex_match_str(smpString_to_cstr(obj), argv[0]);
 }
 
-Object smpregex_match_str(char *pattern, Object obj)
+Object smpRegex_match_str(char *pattern, Object obj)
 {
 	smp_type_check(obj, "String");
 	regex_t *compiled = smp_malloc(sizeof(regex_t));
-	Object obj_code = smpregex_compile_str(compiled, pattern);
+	Object obj_code = smpRegex_compile_str(compiled, pattern);
 	check_for_thrown(obj_code, smp_free(compiled));
 	
 	size_t length = SMPREGEX_MAX_MATCHES;
@@ -164,21 +162,21 @@ Object smpregex_match_str(char *pattern, Object obj)
 	return res;
 	
 }
-Object smpregex_matchp(Object obj, int argc, Object argv[])
+Object smpRegex_matchp(Object obj, int argc, Object argv[])
 {
-	Object match = smpregex_match(obj, argc, argv);
+	Object match = smpRegex_match(obj, argc, argv);
 	check_for_thrown(match, NULL);
-	if (smptype_id_eq(match, smptype_id_nil))
+	if (smpType_id_eq(match, smpType_id_nil))
 		return smp_nil;
 	return smp_true;
 }
 
-int smpregex_matchp_cint(Object obj, int argc, Object argv[])
+int smpRegex_matchp_cint(Object obj, int argc, Object argv[])
 {
-	Object match = smpregex_match(obj, argc, argv);
-	if (smptype_name_eq(match, "Thrown"))
+	Object match = smpRegex_match(obj, argc, argv);
+	if (smpType_name_eq(match, "Thrown"))
 		return -1;
-	if (smptype_name_eq(match, "TrueClass"))
+	if (smpType_name_eq(match, "TrueClass"))
 		return 1;
 	return 0;
 }

@@ -6,8 +6,6 @@
  *
  */
 
-#include "object.h"
-
 MiniHash minihash_init()
 {
 	return minihash_init_capacity(HASH_DEFAULT_LENGTH);

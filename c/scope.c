@@ -6,8 +6,6 @@
  *
  */
 
-#include "scope.h"
-
 int scope_init()
 {
 	scope_length = 1;
@@ -48,6 +46,11 @@ int scope_add(char *name, Object obj)
 	int ret = gc_stack_push(&obj);
 	if (ret) return ret;
 	return minihash_add(scope_top, name, obj);
+}
+
+Object scope_get(char *name)
+{
+	return minihash_get(scope_top, name);
 }
 
 Object scope_self()

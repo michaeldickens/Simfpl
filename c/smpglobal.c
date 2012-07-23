@@ -8,43 +8,59 @@
  *
  */
 
-#include "smp_classes.h"
-
-int smpglobal_create_class()
+int smpGlobal_create_class()
 {
 	smp_stdin = stdin;
 	smp_stdout = stdout;
 	smp_stderr = stderr;
 	
-	smpglobal_class("Global", &smptype_object, CLASS_ABSTRACT | CLASS_FINAL);
+	smpGlobal_class("Global", &smpType_object, CLASS_ABSTRACT | CLASS_FINAL);
 	smp_global = smp_getclass("Global");
-	smptype_global = obj_core(SmpType, smp_global);
+	smpType_global = obj_core(SmpType, smp_global);
 	
 	/* Set Global as the default self. */
 	scope_add("self", smp_global);
 	
-	smptype_def(smp_global, SCOPE_CLASS_DATA, "catch", smpfun_init(&smpglobal_catch_arg, 2, "Nil", "Exception"));
-	smptype_def(smp_global, SCOPE_CLASS_DATA, "list", smpfun_init(&smpglobal_list, 3, "List", "&rest", "Object"));
-	smptype_def(smp_global, SCOPE_CLASS_DATA, "print", smpfun_init(&smpglobal_print_arg, 2, "Nil", "Object"));
-	smptype_def(smp_global, SCOPE_CLASS_DATA, "printf", smpfun_init(&smp_printf_arg, 4, "Nil", "String", "&rest", "Object"));
-	smptype_def(smp_global, SCOPE_CLASS_DATA, "println", smpfun_init(&smpglobal_println_arg, 2, "Nil", "Object"));
-	smptype_def(smp_global, SCOPE_CLASS_DATA, "sprintf", smpfun_init(&smpglobal_sprintf_arg, 4, "String", "String", "&rest", "Object"));
-	smptype_def(smp_global, SCOPE_CLASS_DATA, "throw", smpfun_init(&smpglobal_throw_arg, 1, "Thrown"));
+	smpType_def(smp_global, SCOPE_CLASS_DATA, "!", smpFunction_init(&smpBool_not, 2, "Bool", "Object"));
+	smpType_def(smp_global, SCOPE_CLASS_DATA, "~", smpFunction_init(&smpInteger_not, 2, "Integer", "Integer"));
+	smpType_def(smp_global, SCOPE_CLASS_DATA, "array", smpFunction_init(&smpGlobal_array, 3, "Array", "&rest", "Object"));
+	smpType_def(smp_global, SCOPE_CLASS_DATA, "catch", smpFunction_init(&smpGlobal_catch_arg, 2, "Nil", "Exception"));
+	smpType_def(smp_global, SCOPE_CLASS_DATA, "list", smpFunction_init(&smpGlobal_list, 3, "List", "&rest", "Object"));
+	smpType_def(smp_global, SCOPE_CLASS_DATA, "print", smpFunction_init(&smpGlobal_print_arg, 2, "Nil", "Object"));
+	smpType_def(smp_global, SCOPE_CLASS_DATA, "printf", smpFunction_init(&smp_printf_arg, 4, "Nil", "String", "&rest", "Object"));
+	smpType_def(smp_global, SCOPE_CLASS_DATA, "println", smpFunction_init(&smpGlobal_println_arg, 2, "Nil", "Object"));
+	smpType_def(smp_global, SCOPE_CLASS_DATA, "sprintf", smpFunction_init(&smpGlobal_sprintf_arg, 4, "String", "String", "&rest", "Object"));
+	smpType_def(smp_global, SCOPE_CLASS_DATA, "throw", smpFunction_init(&smpGlobal_throw_arg, 1, "Thrown"));
 	
-	smptype_defvar(smp_global, SCOPE_CLASS_DATA, "nil", smp_nil);
-	smptype_defvar(smp_global, SCOPE_CLASS_DATA, "true", smp_true);
+	smpType_defvar(smp_global, SCOPE_CLASS_DATA, "nil", smp_nil);
+	smpType_defvar(smp_global, SCOPE_CLASS_DATA, "true", smp_true);
 		
 	return 0;
 }
 
-Object smpglobal_catch_arg(Object obj, int argc, Object argv[])
+Object smpGlobal_array(Object obj, int argc, Object argv[])
 {
-	return smpglobal_throw(smpexc_init_fmt(
+	long i, length = smpList_length_clong(argv[0]);
+	Object *arr = smp_malloc(sizeof(Object) * next_power_of_2(length));
+	memset(arr, 0, sizeof(Object) * next_power_of_2(length));
+	
+	Object ptr = argv[0];
+	for (i = 0; i < length; ++i) {
+		arr[i] = smpList_car_c(ptr);
+		ptr = smpList_cdr_c(ptr);
+	}
+	
+	return smpArray_init_array(arr, length);
+}
+
+Object smpGlobal_catch_arg(Object obj, int argc, Object argv[])
+{
+	return smpGlobal_throw(smpException_init_fmt(
 			smp_getclass("ImplementationException"), 
 			"catch() not implemented."));
 }
 
-int smpglobal_class(char *name, SmpType *parent, int flags)
+int smpGlobal_class(char *name, SmpType *parent, int flags)
 {
 	if (parent && parent->finalp)
 		return 1;
@@ -60,10 +76,10 @@ int smpglobal_class(char *name, SmpType *parent, int flags)
 		parents_length = 1;
 	}
 	
-	return smpglobal_class_multiple(name, parents, parents_length, flags);
+	return smpGlobal_class_multiple(name, parents, parents_length, flags);
 }
 
-int smpglobal_class_multiple(char *name, SmpType **parents, 
+int smpGlobal_class_multiple(char *name, SmpType **parents, 
 		size_t parents_length, int flags)
 {
 	if (parents && parents[0] && parents[0]->finalp)
@@ -73,8 +89,8 @@ int smpglobal_class_multiple(char *name, SmpType **parents,
 	new_type.name = smp_malloc(sizeof(char) * (strlen(name) + 1));
 	strcpy(new_type.name, name);
 
-	new_type.type_id = smptype_next_id++;
-	minihash_add(&smptype_ids, new_type.name, objid_init(new_type.type_id));
+	new_type.type_id = smpType_next_id++;
+	minihash_add(&smpType_ids, new_type.name, objid_init(new_type.type_id));
 
 	new_type.parents = parents;
 	new_type.parents_length = parents_length;
@@ -101,58 +117,65 @@ int smpglobal_class_multiple(char *name, SmpType **parents,
 	return 0;	
 }
 
-Object smpglobal_class_arg(Object obj, int argc, Object argv[])
+Object smpGlobal_class_arg(Object obj, int argc, Object argv[])
 {
 	Object name = argv[0];
 	Object parents = argv[1];
 	Object body = argv[2];
 	
-	char *name_str = smpstr_to_cstr(name);
+	char *name_str = smpString_to_cstr(name);
 	
 	smp_printf("name: %st, parents: %st, body: %st\n", name, parents, body);
 	
 	return smp_nil;
 }
 
-Object smpglobal_fprint(FILE *fp, Object obj)
+Object smpGlobal_fprint(FILE *fp, Object obj)
 {
-	Object strobj = smpobj_funcall(obj, "to_s", 0, NULL);
+	Object strobj = smpObject_funcall(obj, "to_s", 0, NULL);
 	
-	if (smptype_name_eq(strobj, "String") == FALSE)
+	if (smpType_name_eq(strobj, "String") == FALSE)
 		return strobj;
 	
-	fprintf(fp, "%s", smpstr_to_cstr(strobj));
+	fprintf(fp, "%s", smpString_to_cstr(strobj));
 	return smp_nil;
 }
 
-Object smpglobal_fprintf(FILE *fp, char *format, ...)
+Object smpGlobal_fprintf(FILE *fp, char *format, ...)
 {
 	va_list ap;
 	va_start(ap, format);
-	Object res = smpglobal_vsprintf(format, ap);
+	Object res = smpGlobal_vsprintf(format, ap);
 	va_end(ap);
 	check_for_thrown(res, NULL);
-	return smpglobal_fprint(fp, res);
+	return smpGlobal_fprint(fp, res);
 }
 
-Object smpglobal_list(Object obj, int argc, Object argv[])
+Object smpGlobal_list(Object obj, int argc, Object argv[])
 {
 	/* The &rest in the argument specifier does all the work. */
 	return argv[0];
 }
 
-Object smp_print(Object obj)
+/*
+Object smpGlobal_main(Object obj, int argc, Object argv[])
 {
-	Object strobj = smpobj_funcall(obj, "to_s", 0, NULL);
-	
-	if (smptype_name_eq(strobj, "String") == FALSE)
-		return strobj;
-	
-	fprintf(smp_stdout, "%s", smpstr_to_cstr(strobj));
 	return smp_nil;
 }
+*/
 
-Object smpglobal_print_arg(Object obj, int argc, Object argv[])
+Object smp_print(Object obj)
+{
+	Object strobj = smpObject_funcall(obj, "to_s", 0, NULL);
+	
+	if (smpType_name_eq(strobj, "String") == FALSE)
+		return strobj;
+	
+	fprintf(smp_stdout, "%s", smpString_to_cstr(strobj));
+	return obj;
+}
+
+Object smpGlobal_print_arg(Object obj, int argc, Object argv[])
 {
 	return smp_print(argv[0]);
 }
@@ -161,7 +184,7 @@ Object smp_printf(char *format, ...)
 {
 	va_list ap;
 	va_start(ap, format);
-	Object res = smpglobal_vsprintf(format, ap);
+	Object res = smpGlobal_vsprintf(format, ap);
 	va_end(ap);
 	check_for_thrown(res, NULL);
 	return smp_print(res);
@@ -169,36 +192,35 @@ Object smp_printf(char *format, ...)
 
 Object smp_printf_arg(Object obj, int argc, Object argv[])
 {
-	Object res = smpglobal_sprintf(smpstr_to_cstr(obj), argc, argv);
+	Object res = smpGlobal_sprintf_arg(obj, argc, argv);
 	check_for_thrown(res, NULL);
-	smp_print(res);
-	return smp_nil;
+	return smp_print(res);
 }
 
 Object smp_println(Object obj)
 {
 	Object res = smp_print(obj);
-	if (smptype_name_eq(res, "Thrown"))
+	if (smpType_name_eq(res, "Thrown"))
 		return res;
 	fprintf(smp_stdout, "\n");
-	return smp_nil;
+	return obj;
 }
 
-Object smpglobal_println_arg(Object obj, int argc, Object argv[])
+Object smpGlobal_println_arg(Object obj, int argc, Object argv[])
 {
 	return smp_println(argv[0]);
 }
 
-Object smpglobal_sprintf(char *format, ...)
+Object smpGlobal_sprintf(char *format, ...)
 {
 	va_list ap;
 	va_start(ap, format);
-	Object res = smpglobal_vsprintf(format, ap);
+	Object res = smpGlobal_vsprintf(format, ap);
 	va_end(ap);
 	return res;
 }
 
-Object smpglobal_vsprintf(char *format, va_list ap)
+Object smpGlobal_vsprintf(char *format, va_list ap)
 {
 	/* Convert the variable arguments into an array. */
 	int argc = 0;
@@ -223,28 +245,28 @@ Object smpglobal_vsprintf(char *format, va_list ap)
 	for (i = 0; i < argc; ++i) {
 		Object car = va_arg(ap, Object);
 //		check_for_thrown(car, NULL);
-		Object cons = smpobj_cons_c(car, smp_nil);
-		if (smptype_id_eq(list_ptr, smptype_id_nil)) {
+		Object cons = smpObject_cons_c(car, smp_nil);
+		if (smpType_id_eq(list_ptr, smpType_id_nil)) {
 			list_ptr = list = cons;
 		} else {
-			smppair_set_cdr_now(list_ptr, 1, &cons);
-			list_ptr = smplist_cdr_c(list_ptr);
+			smpPair_set_cdr_now(list_ptr, 1, &cons);
+			list_ptr = smpList_cdr_c(list_ptr);
 		}
 	}
 			
 	Object argv[2];
-	argv[0] = smpstr_init(format);
+	argv[0] = smpString_init(format);
 	argv[1] = list;
 	
-	return smpglobal_sprintf_arg(smp_global, argc, argv);
+	return smpGlobal_sprintf_arg(smp_global, argc, argv);
 }
 
-Object smpglobal_sprintf_arg(Object obj, int argc, Object argv[])
+Object smpGlobal_sprintf_arg(Object obj, int argc, Object argv[])
 {
 	smp_type_check(argv[0], "String");
 	Object listtype = smp_getclass("List");
-	if (smpobj_instancep_cint(argv[0], 1, &listtype)) {
-		return smpglobal_throw(smptypeerr_init((SmpType *) listtype.core, 
+	if (smpObject_instancep_cint(argv[0], 1, &listtype)) {
+		return smpGlobal_throw(smpTypeError_init((SmpType *) listtype.core, 
 				argv[0]));
 	}
 	DISABLE_GC_ACTIVEP;
@@ -257,7 +279,7 @@ Object smpglobal_sprintf_arg(Object obj, int argc, Object argv[])
 	
 	char *ptr = format;
 	
-	size_t arglen = smplist_length_clong(list);
+	size_t arglen = smpList_length_clong(list);
 	
 	while (*ptr) {
 		if (*ptr != '%') {
@@ -275,18 +297,18 @@ Object smpglobal_sprintf_arg(Object obj, int argc, Object argv[])
 					++j;
 			
 			ENABLE_GC_ACTIVEP;
-			return smpglobal_throw(smpexc_init_fmt(smp_getclass("StringFormatException"), 
+			return smpGlobal_throw(smpException_init_fmt(smp_getclass("StringFormatException"), 
 					"Not enough arguments for formatted output (%d expected, %d found).", j, arglen));
 		}
 		
 		char *fmt_end = ptr;
-		Object fmt_res = obj_put_fmt(smplist_car_c(list), ptr, &fmt_end);
-		if (smptype_name_eq(fmt_res, "Thrown")) {
+		Object fmt_res = obj_put_fmt(smpList_car_c(list), ptr, &fmt_end);
+		if (smpType_name_eq(fmt_res, "Thrown")) {
 			ENABLE_GC_ACTIVEP;
 			return fmt_res;
-		} else if (smptype_name_eq(fmt_res, "String") == FALSE) {
+		} else if (smpType_name_eq(fmt_res, "String") == FALSE) {
 			ENABLE_GC_ACTIVEP;
-			return smpglobal_throw(smptypeerr_init(
+			return smpGlobal_throw(smpTypeError_init(
 				(SmpType *) smp_getclass("String").core, fmt_res));
 		}
 		
@@ -295,17 +317,17 @@ Object smpglobal_sprintf_arg(Object obj, int argc, Object argv[])
 			str = smp_realloc(str, sizeof(char) * (str_len *= 2));
 		}
 		
-		sprintf(str + i, "%s", smpstr_to_cstr(fmt_res));
+		sprintf(str + i, "%s", smpString_to_cstr(fmt_res));
 		ptr = fmt_end;
 		i += strlen(str + i);
 		
-		list = smplist_cdr_c(list);
+		list = smpList_cdr_c(list);
 		++j;
 	}
 	
 	str[i] = '\0';
 	
-	Object res = smpstr_init(str);
+	Object res = smpString_init(str);
 	smp_free(str);
 		
 	ENABLE_GC_ACTIVEP;
@@ -315,7 +337,7 @@ Object smpglobal_sprintf_arg(Object obj, int argc, Object argv[])
 Object obj_put_fmt(Object obj, char *fmt, char **fmt_end)
 {	
 	if (*fmt != '%')
-		return smpglobal_throw(smpexc_init_fmt(
+		return smpGlobal_throw(smpException_init_fmt(
 				smp_getclass("StringFormatException"), 
 				"Undefined format %s (does not begin with '%%').", fmt));
 
@@ -339,8 +361,8 @@ Object obj_put_fmt(Object obj, char *fmt, char **fmt_end)
 	Object *argv = NULL;
 	Object prec_obj = smp_nil;
 	
-	if (prec != 0 && smptype_name_eq(obj, "Float")) {
-		prec_obj = smpint_init_clong(prec);
+	if (prec != 0 && smpType_name_eq(obj, "Float")) {
+		prec_obj = smpInteger_init_clong(prec);
 		
 		argc = 1;
 		argv = &prec_obj;
@@ -348,11 +370,11 @@ Object obj_put_fmt(Object obj, char *fmt, char **fmt_end)
 		
 	Object res = smp_nil;
 	if (type == 's')
-		res = smpobj_funcall(obj, "to_s", argc, argv);
+		res = smpObject_funcall(obj, "to_s", argc, argv);
 	else if (type == 'w')
-		res = smpobj_funcall(obj, "write", argc, argv);
+		res = smpObject_funcall(obj, "write", argc, argv);
 	else
-		res = smpglobal_throw(smpexc_init_fmt(
+		res = smpGlobal_throw(smpException_init_fmt(
 				smp_getclass("StringFormatException"), 
 				"Undefined format type %c.", type));
 	
@@ -364,8 +386,8 @@ Object obj_put_fmt(Object obj, char *fmt, char **fmt_end)
 		temp_str[0] = ':';
 		strcpy(temp_str + 1, obj.type->name);
 		
-		Object type_str = smpstr_init(temp_str);
-		res = smpstr_add(res, 1, &type_str);
+		Object type_str = smpString_init(temp_str);
+		res = smpString_add(res, 1, &type_str);
 	}
 	
 	if (fmt_end != NULL)
@@ -375,14 +397,14 @@ Object obj_put_fmt(Object obj, char *fmt, char **fmt_end)
 	return res;
 }
 
-Object smpglobal_throw(Object exc)
+Object smpGlobal_throw(Object exc)
 {
-	Object thrown = smpthrown_init(SMPTHROWN_EXCEPTION, exc);
+	Object thrown = smpThrown_init(SMPTHROWN_EXCEPTION, exc);
 	return thrown;
 }
 
-Object smpglobal_throw_arg(Object obj, int argc, Object argv[])
+Object smpGlobal_throw_arg(Object obj, int argc, Object argv[])
 {
-	return smpglobal_throw(argv[0]);
+	return smpGlobal_throw(argv[0]);
 }
 

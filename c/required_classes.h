@@ -14,17 +14,19 @@
  * Global
  * 
  */
-int smpglobal_create_class();
+int smpGlobal_create_class();
 
 FILE *smp_stdin;
 FILE *smp_stdout;
 FILE *smp_stderr;
 
-#define smpglobal_catch(arg, type) \
-	if (smptype_name_eq(arg, "Thrown") && \
-			smpthrown_contains_namep((arg), (type)))
+Object smpGlobal_array(Object obj, int argc, Object argv[]);
 
-Object smpglobal_catch_arg(Object obj, int argc, Object argv[]);
+#define smpGlobal_catch(arg, type) \
+	if (smpType_name_eq(arg, "Thrown") && \
+			smpThrown_contains_namep((arg), (type)))
+
+Object smpGlobal_catch_arg(Object obj, int argc, Object argv[]);
 
 /* 
  * Defines a class with name (name) and parent class (parent). (name) is copied, 
@@ -37,24 +39,27 @@ Object smpglobal_catch_arg(Object obj, int argc, Object argv[]);
  * 0: Success.
  * 1: Failure. The parent type is final.
  */
-int smpglobal_class(char *name, SmpType *parent, int flags);
-Object smpglobal_class_arg(Object obj, int argc, Object argv[]);
+int smpGlobal_class(char *name, SmpType *parent, int flags);
+Object smpGlobal_class_arg(Object obj, int argc, Object argv[]);
 
 /* Creates a class with multiple parent classes. parents must be allocated 
  * before it is passed in, and never cleared.
  */
-int smpglobal_class_multiple(char *name, SmpType **parents, 
+int smpGlobal_class_multiple(char *name, SmpType **parents, 
 		size_t parents_length, int flags);
 
-Object smpglobal_fprint(FILE *fp, Object obj);
-Object smpglobal_fprintf(FILE *fp, char *format, ...);
+Object smpGlobal_fprint(FILE *fp, Object obj);
+Object smpGlobal_fprintf(FILE *fp, char *format, ...);
 
 /* Constructs a list.
  */
-Object smpglobal_list(Object obj, int argc, Object argv[]);
+Object smpGlobal_list(Object obj, int argc, Object argv[]);
 
+Object smpGlobal_main(Object obj, int argc, Object argv[]);
+
+/* Prints the object and returns it. */
 Object smp_print(Object obj);
-Object smpglobal_print_arg(Object obj, int argc, Object argv[]);
+Object smpGlobal_print_arg(Object obj, int argc, Object argv[]);
 
 /* 
  * Equivalent to print(sprintf(format, ...)).
@@ -62,8 +67,9 @@ Object smpglobal_print_arg(Object obj, int argc, Object argv[]);
 Object smp_printf(char *format, ...);
 Object smp_printf_arg(Object obj, int argc, Object argv[]);
 
+/* Prints the object followed by a newline and returns the object. */
 Object smp_println(Object obj);
-Object smpglobal_println_arg(Object obj, int argc, Object argv[]);
+Object smpGlobal_println_arg(Object obj, int argc, Object argv[]);
 
 /* 
  * Writes a string using the given format.
@@ -78,13 +84,13 @@ Object smpglobal_println_arg(Object obj, int argc, Object argv[]);
  * w: Prints the object by calling write().
  * 
  */
-Object smpglobal_sprintf(char *format, ...);
-Object smpglobal_vsprintf(char *format, va_list ap);
+Object smpGlobal_sprintf(char *format, ...);
+Object smpGlobal_vsprintf(char *format, va_list ap);
 
 /* argv[0] contains the format and the other elements of argv contain the 
  * argument list.
  */
-Object smpglobal_sprintf_arg(Object obj, int argc, Object argv[]);
+Object smpGlobal_sprintf_arg(Object obj, int argc, Object argv[]);
 
 /* Takes a single format and returns a string with the object written using 
  * that format.
@@ -92,10 +98,10 @@ Object smpglobal_sprintf_arg(Object obj, int argc, Object argv[]);
  * fmt_end: A pointer to the end of the format inside (fmt). Used by sprintf().
  */
 Object obj_put_fmt(Object obj, char *fmt, char **fmt_end);
-Object smpglobal_sprintf_arg(Object obj, int argc, Object argv[]);
+Object smpGlobal_sprintf_arg(Object obj, int argc, Object argv[]);
 
-Object smpglobal_throw(Object type);
-Object smpglobal_throw_arg(Object obj, int argc, Object argv[]);
+Object smpGlobal_throw(Object type);
+Object smpGlobal_throw_arg(Object obj, int argc, Object argv[]);
 
 /* 
  * Regex
@@ -116,35 +122,34 @@ typedef struct smpregexmatch_struct {
 	size_t length;
 } SmpRegexMatch;
 
-int smpregex_create_class();
+int smpRegex_create_class();
 
 Object smpregmatch_clear(Object obj, int argc, Object argv[]);
 
 /* Compiles a regex with the REG_EXTENDED flag, which tells GNU to use 
  * extended regular expressions.
  */
-Object smpregex_compile(regex_t *compiled, Object regex);
+Object smpRegex_compile(regex_t *compiled, Object regex);
 
 /* Compiles a regex with the given flags. See GNU Regular Expression Library 
  * documentation for a description of flags.
  * 
  * Returns nil on success and throws an exception on failure.
  */
-Object smpregex_compile_flags(regex_t *compiled, Object regex, int flags);
+Object smpRegex_compile_flags(regex_t *compiled, Object regex, int flags);
 
-Object smpregex_compile_str(regex_t *compiled, char *pattern);
-Object smpregex_compile_str_flags(regex_t *compiled, char *pattern, int flags);
+Object smpRegex_compile_str(regex_t *compiled, char *pattern);
+Object smpRegex_compile_str_flags(regex_t *compiled, char *pattern, int flags);
 
 /* Examines the return code to find errors. If an error was found, throws an 
  * exception. Otherwise, returns nil.
  */
-Object smpregex_compile_handle_errors(char *pattern, int code);
+Object smpRegex_compile_handle_errors(char *pattern, int code);
 
-Object smpregmatch_init(regmatch_t matches[], size_t length);
-
-/* Takes an array and its length and extracts matches from it. Allocates a new 
- * pointer to put in the result. If length is too long, this function will 
- * adjust if the unused elements in matches are set to 0.
+/* Takes an array and its length and extracts matches from it. Allocates a 
+ * new pointer to put in the result. If length is too long, this function 
+ * will adjust if the unused elements in matches are set to 0.
+ */
 Object smpregmatch_init(regmatch_t matches[], size_t length);
 
 /* Matches a string.
@@ -154,11 +159,11 @@ Object smpregmatch_init(regmatch_t matches[], size_t length);
  * 
  * return: A RegexMatch object
  */
-Object smpregex_match(Object obj, int argc, Object argv[]);
-Object smpregex_match_str(char *pattern, Object obj);
+Object smpRegex_match(Object obj, int argc, Object argv[]);
+Object smpRegex_match_str(char *pattern, Object obj);
 
-Object smpregex_matchp(Object obj, int argc, Object argv[]);
-int smpregex_matchp_cint(Object obj, int argc, Object argv[]);
+Object smpRegex_matchp(Object obj, int argc, Object argv[]);
+int smpRegex_matchp_cint(Object obj, int argc, Object argv[]);
 
 /* 
  * Return Codes
@@ -166,7 +171,7 @@ int smpregex_matchp_cint(Object obj, int argc, Object argv[]);
  *  0: No match.
  *  1: Match.
  */
-int smpregex_matchp_cint(Object obj, int argc, Object argv[]);
+int smpRegex_matchp_cint(Object obj, int argc, Object argv[]);
 
 
 /* 
@@ -183,39 +188,40 @@ int smpregex_matchp_cint(Object obj, int argc, Object argv[]);
  * 
  * Array constants (ARRAY_MIN_LENGTH, etc) are defined with MiniHash.
  */
-typedef struct smparray_struct {
+typedef struct smpArray_struct {
 	Object *a;
 	size_t length;
 } SmpArray;
 
-int smparray_create_class();
+int smpArray_create_class();
 
 /* Adds an object onto the end of the array.
  */
-Object smparray_add_now(Object obj, int argc, Object argv[]);
+Object smpArray_add_now(Object obj, int argc, Object argv[]);
 
-Object smparray_clear(Object obj, int argc, Object argv[]);
+Object smpArray_clear(Object obj, int argc, Object argv[]);
 
 /* Initializes an empty array.
  */
-Object smparray_init();
+Object smpArray_init();
 
 /* Initializes a SmpArray from a given C array. The pointer inside the SmpArray 
  * will point to the same area in memory as (arr), so if (arr) is modified, the 
  * SmpArray will change.
  */
-Object smparray_init_array(Object *arr, size_t length);
-Object smparray_gc_mark(Object obj, int argc, Object argv[]);
+Object smpArray_init_array(Object *arr, size_t length);
+Object smpArray_gc_mark(Object obj, int argc, Object argv[]);
 
-Object smparray_get_c(Object obj, size_t index);
+Object smpArray_get_c(Object obj, size_t index);
 
-#define smparray_length_c(obj) (obj_core(SmpArray, obj).length)
-Object smparray_length(Object obj, int argc, Object argv[]);
+#define smpArray_length_c(obj) (obj_core(SmpArray, obj).length)
+Object smpArray_length(Object obj, int argc, Object argv[]);
 
-Object smparray_map(Object obj, int argc, Object argv[]);
-int smparray_resize(SmpArray *arr, size_t size);
-Object smparray_to_s(Object obj, int argc, Object argv[]);
-Object smparray_write(Object obj, int argc, Object argv[]);
+Object smpArray_map(Object obj, int argc, Object argv[]);
+Object smpArray_reduce(Object obj, int argc, Object argv[]);
+int smpArray_resize(SmpArray *arr, size_t size);
+Object smpArray_to_s(Object obj, int argc, Object argv[]);
+Object smpArray_write(Object obj, int argc, Object argv[]);
 
 
 /*
@@ -235,13 +241,13 @@ Object smparray_write(Object obj, int argc, Object argv[]);
  * Buckets are represented with linked lists. Key-value pairs are stored with 
  * cons cells.
  * 
- * A Note on Naming Conventions: A function starting with smphash_ is a function 
- * on a hash contained in an Object. A function starting with smphash_core_ is a 
+ * A Note on Naming Conventions: A function starting with smpHash_ is a function 
+ * on a hash contained in an Object. A function starting with smpHash_core_ is a 
  * function directly on a SmpHash.
  * 
  * Hash constants are defined with MiniHash.
  */
-typedef struct smphash_struct {
+typedef struct smpHash_struct {
 	Object *a;
 	Object default_return_value;
 	size_t capacity, occupied, size;
@@ -253,7 +259,7 @@ typedef struct smphash_struct {
 #define CHARTYPE_SINGLE 4
 #define CHARTYPE_SYMBOL 5
 
-int smphash_create_class();
+int smpHash_create_class();
 
 /* Determines the type of a character.
  */
@@ -263,37 +269,37 @@ int smpparser_char_type(char c);
  * 
  * arg0: A cons cell where the key is in the car and the value is in the cdr.
  */
-int smphash_core_add_now(SmpHash *hash, Object pair);
-Object smphash_add_now(Object obj, int argc, Object argv[]);
+int smpHash_core_add_now(SmpHash *hash, Object pair);
+Object smpHash_add_now(Object obj, int argc, Object argv[]);
 
-Object smphash_clear(Object obj, int argc, Object argv[]);
-int smphash_core_clear(SmpHash *hash);
+Object smpHash_clear(Object obj, int argc, Object argv[]);
+int smpHash_core_clear(SmpHash *hash);
 
 /* Returns true if the hash contains the given key, nil if otherwise.
  */
-Object smphash_containsp(Object obj, int argc, Object argv[]);
+Object smpHash_containsp(Object obj, int argc, Object argv[]);
 
-int smphash_core_copy(SmpHash *res,SmpHash *hash);
-Object smphash_gc_mark(Object obj, int argc, Object argv[]);
+int smpHash_core_copy(SmpHash *res,SmpHash *hash);
+Object smpHash_gc_mark(Object obj, int argc, Object argv[]);
 
 /* Performs a function on each argument.
  * 
  * arg0: The function to be used.
  */
-Object smphash_each(Object obj, int argc, Object argv[]);
+Object smpHash_each(Object obj, int argc, Object argv[]);
 
 /* If the hash contains the given key, returns the corresponding value. If not, 
  * returns the default return value.
  */
-Object smphash_get(Object obj, int argc, Object argv[]);
+Object smpHash_get(Object obj, int argc, Object argv[]);
 
-Object smphash_init();
-Object smphash_init_capacity(size_t capacity);
-SmpHash smphash_core_init_capacity(size_t capacity);
+Object smpHash_init();
+Object smpHash_init_capacity(size_t capacity);
+SmpHash smpHash_core_init_capacity(size_t capacity);
 
-Object smphash_to_s(Object obj, int argc, Object argv[]);
-Object smphash_write(Object obj, int argc, Object argv[]);
-Object smphash_make_string(Object obj, char *fun);
+Object smpHash_to_s(Object obj, int argc, Object argv[]);
+Object smpHash_write(Object obj, int argc, Object argv[]);
+Object smpHash_make_string(Object obj, char *fun);
 
 
 /* 
@@ -304,10 +310,10 @@ Object smphash_make_string(Object obj, char *fun);
 
 typedef SmpString SmpSymbol;
 
-int smpsymbol_create_class();
+int smpSymbol_create_class();
 
-Object smpsymbol_init(char *str);
-char * smpsymbol_to_cstr(Object obj);
-Object smpsymbol_to_s(Object obj, int argc, Object argv[]);
-Object smpsymbol_write(Object obj, int argc, Object argv[]);
+Object smpSymbol_init(char *str);
+char * smpSymbol_to_cstr(Object obj);
+Object smpSymbol_to_s(Object obj, int argc, Object argv[]);
+Object smpSymbol_write(Object obj, int argc, Object argv[]);
 

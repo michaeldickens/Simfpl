@@ -6,44 +6,69 @@
  *
  */
 
-#include "smp_classes.h"
-
-int smpfun_create_class()
+int smpFunction_create_class()
 {
 	Object function = smp_getclass("Function");
 	
-	smptype_def(function, SCOPE_INSTANCE_DATA, "clear", smpfun_init(&smpfun_clear, 1, "Nil"));
-	smptype_def(function, SCOPE_INSTANCE_DATA, "gc_mark", smpfun_init(&smpfun_gc_mark, 1, "Nil"));
-	smptype_def(function, SCOPE_INSTANCE_DATA, "to_s", smpfun_init(&smpfun_to_s, 1, "String"));
+	smpType_def(function, SCOPE_INSTANCE_DATA, "clear", smpFunction_init(&smpFunction_clear, 1, "Nil"));
+	smpType_def(function, SCOPE_INSTANCE_DATA, "gc_mark", smpFunction_init(&smpFunction_gc_mark, 1, "Nil"));
+	smpType_def(function, SCOPE_INSTANCE_DATA, "to_s", smpFunction_init(&smpFunction_to_s, 1, "String"));
 	
 	return 0;
 }
 
-Object smpfun_call(Object obj, Object fun, int argc, Object argv[])
+Object smpFunction_call(Object obj, Object fun, int argc, Object argv[])
 {
-	if (!smptype_name_eq(fun, "Function")) {
-		return smpglobal_throw(smptypeerr_init(&smptype_function, fun));
+	if (!smpType_name_eq(fun, "Function")) {
+		return smpGlobal_throw(smpTypeError_init(&smpType_function, fun));
 	}
 	
 	SmpFun fun_core = obj_core(SmpFun, fun);
 	
-	Object res = (*fun_core.fun)(obj, argc, argv);
+	/* Change the arguments according to the modifiers: optional, rest, etc. 
+	 * Assumes that the modifiers have no errors; an optional arg cannot be 
+	 * followed by any non-optional args, and a rest arg must come last.
+	 */
+	int i, new_argc = fun_core.argspecs_length - 1;
 	
-
+	Object new_argv[new_argc];
+	for (i = 0; i < new_argc; ++i) {
+		if (i >= argc && fun_core.argspecs[i+1].optionalp) {
+			new_argv[i] = fun_core.argspecs[i+1].default_val;
+		} else if (fun_core.argspecs[i+1].restp) {
+			Object list = smp_nil;
+			int j;
+			for (j = argc - 1; j >= i; --j) {
+				list = smpObject_cons_c(argv[j], list);
+			}
+			new_argv[i] = list;
+			break;
+		} else if (i >= argc) {
+			return smpGlobal_throw(smpException_init_fmt(
+				smp_getclass("ArgumentError"), 
+				"Wrong number of arguments in %s::%s (%d expected, %d found).", 
+				obj.type->name, fun_core.name, new_argc, argc));
+		} else {
+			new_argv[i] = argv[i];
+		}
+	}
+	
+	Object res = (*fun_core.fun)(obj, new_argc, new_argv);	
+	
 	/* If a Thrown object was returned, add this function to the backtraces of 
 	 * the contained exceptions. 
 	 */
-	if (smptype_id_eq(res, smptype_thrown.type_id) && 
-			obj_core(SmpThrown, res).type == SMPTHROWN_EXCEPTION) {
+	if (smp_thrown_exceptionp_c(res)) {
 		size_t i;
-		for (i = 0; i < obj_core(SmpThrown, res).length; ++i)
-			smpexc_backtrace_add_now(obj_core(SmpThrown, res).objs[i], obj, fun);
+		for (i = 0; i < obj_core(SmpThrown, res).length; ++i) {
+			smpException_backtrace_add_now(obj_core(SmpThrown, res).objs[i], obj, fun);
+		}
 	}
 	
 	return res;
 }
 
-Object smpfun_clear(Object obj, int argc, Object argv[])
+Object smpFunction_clear(Object obj, int argc, Object argv[])
 {
 	SmpFun core = obj_core(SmpFun, obj);
 	smp_free(core.name);
@@ -57,7 +82,7 @@ Object smpfun_clear(Object obj, int argc, Object argv[])
 	return smp_nil;
 }
 
-Object smpfun_gc_mark(Object obj, int argc, Object argv[])
+Object smpFunction_gc_mark(Object obj, int argc, Object argv[])
 {
 	SmpFun core = obj_core(SmpFun, obj);
 	
@@ -70,21 +95,21 @@ Object smpfun_gc_mark(Object obj, int argc, Object argv[])
 	return smp_nil;
 }
 
-Object smpfun_init(Object (*fun)(Object obj, int argc, Object argv[]), 
+Object smpFunction_init(Object (*fun)(Object obj, int argc, Object argv[]), 
 		int argc, ...)
 {
 	va_list ap;
 	va_start(ap, argc);
-	Object res = smpfun_init_v(fun, argc, ap);
+	Object res = smpFunction_init_v(fun, argc, ap);
 	va_end(ap);
 	return res;
 }
 
-Object smpfun_init_v(Object (*fun)(Object obj, int argc, Object argv[]), 
+Object smpFunction_init_v(Object (*fun)(Object obj, int argc, Object argv[]), 
 		int argc, va_list ap)
 {	
 	DISABLE_GC_ACTIVEP;
-	Object res = obj_init(&smptype_function);
+	Object res = obj_init(&smpType_function);
 		
 	SmpFun smp_fun;
 	smp_fun.name = NULL;
@@ -96,7 +121,6 @@ Object smpfun_init_v(Object (*fun)(Object obj, int argc, Object argv[]),
 		return smp_nil;
 	}
 		
-	--argc;
 	argspec_t argspecs[argc];
 	
 	/* If one argument is optional, all the rest are optional as well. */
@@ -117,7 +141,7 @@ Object smpfun_init_v(Object (*fun)(Object obj, int argc, Object argv[]),
 		 */
 		if (length > 0 && argspecs[length-1].restp) {
 			ENABLE_GC_ACTIVEP;
-			return smpglobal_throw(smpexc_init_fmt(
+			return smpGlobal_throw(smpException_init_fmt(
 					smp_getclass("FunctionError"), 
 					"Unexpected token %s after &rest argument.", arg));
 		}
@@ -153,10 +177,10 @@ Object smpfun_init_v(Object (*fun)(Object obj, int argc, Object argv[]),
 	return res;
 }
 
-Object smpfun_to_s(Object obj, int argc, Object argv[])
+Object smpFunction_to_s(Object obj, int argc, Object argv[])
 {
-	if (smpfun_name(obj))
-		return smpstr_init_fmt("%s()", smpfun_name(obj));
-	return smpstr_init_fmt("<Function: %lx>", obj_core(SmpFun, obj).fun);
+	if (smpFunction_name(obj))
+		return smpString_init_fmt("%s()", smpFunction_name(obj));
+	return smpString_init_fmt("<Function: %lx>", obj_core(SmpFun, obj).fun);
 }
 

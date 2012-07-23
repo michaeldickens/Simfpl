@@ -6,9 +6,7 @@
  *
  */
 
-#include "smp_classes.h"
-
-int smpcollection_create_class()
+int smpCollection_create_class()
 {
 	Object collclass = smp_getclass("Collection");
 	

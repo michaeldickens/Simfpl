@@ -14,7 +14,7 @@
 (define-condition syntax-error (compile-error)
   ())
 
-(define-condition unknown-token-error (syntax-error)
+(define-condition function-redefinition-error (compile-error)
   ())
 
 (define-condition mismatched-parentheses-error (syntax-error)
@@ -22,4 +22,14 @@
 
 (define-condition mismatched-quotes-error (syntax-error)
   ())
+
+(define-condition invalid-list-expansion-error (syntax-error)
+  ((value :initarg :value :accessor :value)))
+
+(define-condition undefined-symbol-error (compile-error)
+  ())
+
+(define-condition unknown-token-error (syntax-error)
+  ())
+
 

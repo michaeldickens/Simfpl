@@ -1,7 +1,7 @@
-def factorial(n) => (
+def factorial(n) (
 	if (n == 0) 1 (n * (factorial (n - 1))))
 
-def factorial(n) => {
+def factorial(n) {
 	product = 1
 	while (n > 0) {
 		product *= n
@@ -9,9 +9,9 @@ def factorial(n) => {
 	}
 }
 
-def factorial(n) => (
+def factorial(n) (
 	case n
 		0 -> 1
 		true -> factorial (n - 1))
 
-def factorial(n) => ((1..n) fold ((x, y) => (x * y)))
+def factorial(n) ((1..n) fold ((x, y) => (x * y)))
