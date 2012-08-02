@@ -25,6 +25,7 @@ int smpFloat_create_class()
 	smpType_def(floatclass, SCOPE_INSTANCE_DATA, "*", smpFunction_init(&smpFloat_mul, 2, "Number", "Number"));
 	smpType_def(floatclass, SCOPE_INSTANCE_DATA, "/", smpFunction_init(&smpFloat_div, 2, "Number", "Number"));
 	smpType_def(floatclass, SCOPE_INSTANCE_DATA, "**", smpFunction_init(&smpFloat_pow, 2, "Number", "Number"));
+	smpType_def(floatclass, SCOPE_INSTANCE_DATA, "cmp", smpFunction_init(&smpFloat_cmp, 2, "Integer", "Object"));
 	smpType_def(floatclass, SCOPE_INSTANCE_DATA, "==", smpFunction_init(&smpInteger_equalp, 2, "Bool", "Object"));
 	smpType_def(floatclass, SCOPE_INSTANCE_DATA, "!=", smpFunction_init(&smpInteger_nequalp, 2, "Bool", "Object"));
 	smpType_def(floatclass, SCOPE_INSTANCE_DATA, "<", smpFunction_init(&smpFloat_lt, 2, "Bool", "Object"));
@@ -193,94 +194,86 @@ Object smpFloat_pow(Object obj, int argc, Object argv[])
 	}	
 }
 
-int smpFloat_cmp_cint(Object obj, int argc, Object argv[])
+int smpFloat_cmp_cint(Object *err, Object obj, Object arg)
 {
-	if (smpType_id_eq(argv[0], smpType_id_int)) {
-		int num = mpfr_cmp_z(obj_core(mpfr_t, obj), obj_core(mpz_t, argv[0]));
-		if (num > 0) num = 1;
-		if (num < 0) num = -1;
+	if (smpType_id_eq(arg, smpType_id_int)) {
+		int num = mpfr_cmp_z(obj_core(mpfr_t, obj), obj_core(mpz_t, arg));
 		return num;
-	} else if (smpType_id_eq(argv[0], smpType_id_float)) {
-		int num = mpfr_cmp(obj_core(mpfr_t, obj), obj_core(mpfr_t, argv[0]));
-		if (num > 0) num = 1;
-		if (num < 0) num = -1;
+	} else if (smpType_id_eq(arg, smpType_id_float)) {
+		int num = mpfr_cmp(obj_core(mpfr_t, obj), obj_core(mpfr_t, arg));
 		return num;		
 	} else {
+		*err = smpGlobal_throw(smpTypeError_init(
+				&obj_core(SmpType, smp_getclass("Number")), arg));
 		return -2;
 	}
 }
 
 Object smpFloat_cmp(Object obj, int argc, Object argv[])
 {
-	int num = smpFloat_cmp_cint(obj, argc, argv);
-	if (num == -2)
-		return smpGlobal_throw(smpTypeError_init(NULL, argv[0]));
-	
+	Object err = smp_nil;
+	int num = smpFloat_cmp_cint(&err, obj, argv[0]);
+	if (smpType_id_eq(err, smpType_id_thrown))
+		return err;
 	return smpInteger_init_clong((long) num);
 }
 
 Object smpFloat_equalp(Object obj, int argc, Object argv[])
 {
-	int num = smpFloat_cmp_cint(obj, argc, argv);
-	if (num == -2)
-		return smpGlobal_throw(smpTypeError_init(
-				&obj_core(SmpType, smp_getclass("Number")), 
-				argv[0]));
+	Object err = smp_nil;
+	int num = smpFloat_cmp_cint(&err, obj, argv[0]);
+	if (smpType_id_eq(err, smpType_id_thrown))
+		return err;
 	
 	return smpBool_init(num == 0);
 }
 
 Object smpFloat_nequalp(Object obj, int argc, Object argv[])
 {
-	int num = smpFloat_cmp_cint(obj, argc, argv);
-	if (num == -2)
-		return smpGlobal_throw(smpTypeError_init(
-				&obj_core(SmpType, smp_getclass("Number")), 
-				argv[0]));
+	Object err = smp_nil;
+	int num = smpFloat_cmp_cint(&err, obj, argv[0]);
+	if (smpType_id_eq(err, smpType_id_thrown))
+		return err;
 	
 	return smpBool_init(num != 0);
 }
 
 Object smpFloat_lt(Object obj, int argc, Object argv[])
 {
-	int num = smpFloat_cmp_cint(obj, argc, argv);
-	if (num == -2)
-		return smpGlobal_throw(smpTypeError_init(
-				&obj_core(SmpType, smp_getclass("Number")), 
-				argv[0]));
+	Object err = smp_nil;
+	int num = smpFloat_cmp_cint(&err, obj, argv[0]);
+	if (smpType_id_eq(err, smpType_id_thrown))
+		return err;
 	
 	return smpBool_init(num < 0);
 }
 
 Object smpFloat_le(Object obj, int argc, Object argv[])
 {
-	int num = smpFloat_cmp_cint(obj, argc, argv);
-	if (num == -2)
-		return smpGlobal_throw(smpTypeError_init(
-				&obj_core(SmpType, smp_getclass("Number")), 
-				argv[0]));
+	Object err = smp_nil;
+	int num = smpFloat_cmp_cint(&err, obj, argv[0]);
+	if (smpType_id_eq(err, smpType_id_thrown))
+		return err;
 	
 	return smpBool_init(num <= 0);
 }
 
 Object smpFloat_ge(Object obj, int argc, Object argv[])
 {
-	int num = smpFloat_cmp_cint(obj, argc, argv);
-	if (num == -2)
-		return smpGlobal_throw(smpTypeError_init(
-				&obj_core(SmpType, smp_getclass("Number")), 
-				argv[0]));
+	Object err = smp_nil;
+	int num = smpFloat_cmp_cint(&err, obj, argv[0]);
+	if (smpType_id_eq(err, smpType_id_thrown))
+		return err;
 	
 	return smpBool_init(num >= 0);
 }
 
 Object smpFloat_gt(Object obj, int argc, Object argv[])
 {
-	int num = smpFloat_cmp_cint(obj, argc, argv);
-	if (num == -2)
-		return smpGlobal_throw(smpTypeError_init(
-				&obj_core(SmpType, smp_getclass("Number")), 
-				argv[0]));
+	Object err = smp_nil;
+	int num = smpFloat_cmp_cint(&err, obj, argv[0]);
+	if (smpType_id_eq(err, smpType_id_thrown))
+		return err;
 	
 	return smpBool_init(num > 0);
 }

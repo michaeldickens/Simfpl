@@ -72,7 +72,6 @@ Object smpType_def_general(Object type, int flags, char *name, Object obj)
 		internal_error("Undefined scope flag %d.\n", flags & SCOPE_DATA_FLAG);
 	}
 	
-	gc_stack_push(&obj);
 	minihash_add(data, name, obj);
 	
 	return obj;

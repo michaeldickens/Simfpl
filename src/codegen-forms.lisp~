@@ -17,6 +17,10 @@
       indent "store " *obj-noptr* " " (instruction-to-string ,src) ", "
         *obj-decl* (instruction-to-string ,dest) ", align 8" *newline*))
 
+(defun getelementptr-form (src dest &rest nums)
+  (concatenate 'string
+      indent ))
+
 (defmacro icmp-form (dest src)
   `(concatenate 'string
       indent (instruction-to-string ,dest) " = icmp ne i32 " 
@@ -36,4 +40,24 @@
   `(concatenate 'string 
       *newline* "; <label>:" 
       (if (typep ,label 'string) ,label (write-to-string ,label)) *newline*))
+
+;;; If you call this, you must increment the instruction counter by 6.
+(defmacro check-for-thrown-form (type instruction)
+  `(concatenate 'string
+      indent (instruction-to-string (+ ,instruction 1))
+        " = call i32 @smp_should_" ,type "p_c(" *obj-decl* 
+	(instruction-to-string ,instruction) ")" *newline*
+      (icmp-form (+ ,instruction 2) (+ ,instruction 1))
+      (br2-form (+ ,instruction 2) (+ ,instruction 3) (+ ,instruction 5))
+
+      (label-form (+ ,instruction 3))
+      (load-form (+ ,instruction 4) ,instruction)
+      (store-form (+ ,instruction 4) "agg.result")
+      indent "ret void" *newline*
+
+      (label-form (+ ,instruction 5))))
+
+(defmacro check-for-return-form (instruction)
+  `(check-for-thrown-form "return" ,instruction))
+
 

@@ -132,6 +132,7 @@ int init_fundamental_classes()
 	smpType_def(object, SCOPE_CLASS_DATA, "funcall", smpFunction_init(&smpObject_funcall_arg, 4, "Object", "Function", "&rest", "Object"));
 	smpType_def(object, SCOPE_INSTANCE_DATA, "funcall", smpFunction_init(&smpObject_funcall_arg, 4, "Object", "Function", "&rest", "Object"));
 	smpType_def(object, SCOPE_INSTANCE_DATA | SCOPE_INTERNAL, "gc_mark", smpFunction_init(&smpObject_gc_mark, 1, "Nil"));
+	smpType_def(object, SCOPE_INSTANCE_DATA, "getclass", smpFunction_init(&smpObject_getclass, 1, "Class"));
 	smpType_def(object, SCOPE_INSTANCE_DATA, "to_s", smpFunction_init(&smpObject_to_s, 1, "String"));
 	smpType_def(object, SCOPE_CLASS_DATA, "to_s", smpFunction_init(&smpObject_to_s_class, 1, "String"));
 	smpType_def(object, SCOPE_INSTANCE_DATA, "type", smpFunction_init(&smpObject_type, 1, "Class"));

@@ -11,7 +11,7 @@ int smpInteger_create_class()
 	/* Tells GMP to use the smp_ allocation functions instead of the built-in 
 	 * ones.
 	 */
-	mp_set_memory_functions(&smp_malloc, &smp_realloc_size, &smp_free_size);
+	mp_set_memory_functions(&smp_malloc_fun, &smp_realloc_size, &smp_free_size);
 	
 	smpGlobal_class("Integer", &obj_core(SmpType, smp_getclass("Number")), 0);
 	Object intclass = smp_getclass("Integer");
@@ -33,6 +33,9 @@ int smpInteger_create_class()
 	smpType_def(intclass, SCOPE_INSTANCE_DATA, "&", smpFunction_init(&smpInteger_and, 2, "Integer", "Integer"));
 	smpType_def(intclass, SCOPE_INSTANCE_DATA, "|", smpFunction_init(&smpInteger_ior, 2, "Integer", "Integer"));
 	smpType_def(intclass, SCOPE_INSTANCE_DATA, "^", smpFunction_init(&smpInteger_xor, 2, "Integer", "Integer"));
+	smpType_def(intclass, SCOPE_INSTANCE_DATA, "inc", smpFunction_init(&smpInteger_inc, 1, "Integer"));
+	smpType_def(intclass, SCOPE_INSTANCE_DATA, "dec", smpFunction_init(&smpInteger_dec, 1, "Integer"));
+	smpType_def(intclass, SCOPE_INSTANCE_DATA, "cmp", smpFunction_init(&smpInteger_cmp, 2, "Integer", "Object"));
 	smpType_def(intclass, SCOPE_INSTANCE_DATA, "==", smpFunction_init(&smpInteger_equalp, 2, "Bool", "Object"));
 	smpType_def(intclass, SCOPE_INSTANCE_DATA, "!=", smpFunction_init(&smpInteger_nequalp, 2, "Bool", "Object"));
 	smpType_def(intclass, SCOPE_INSTANCE_DATA, "<", smpFunction_init(&smpInteger_lt, 2, "Bool", "Object"));
@@ -41,6 +44,7 @@ int smpInteger_create_class()
 	smpType_def(intclass, SCOPE_INSTANCE_DATA, ">", smpFunction_init(&smpInteger_gt, 2, "Bool", "Object"));
 	smpType_def(intclass, SCOPE_INSTANCE_DATA, "eq?", smpFunction_init(&smpInteger_eq, 2, "Bool", "Object"));
 	smpType_def(intclass, SCOPE_INSTANCE_DATA, "equal?", smpFunction_init(&smpInteger_equalp, 2, "Bool", "Object"));
+	smpType_def(intclass, SCOPE_INSTANCE_DATA, "range", smpFunction_init(&smpInteger_range, 4, "List", "Integer", "&optional", "String"));
 	smpType_def(intclass, SCOPE_INSTANCE_DATA, "to_s", smpFunction_init(&smpInteger_to_s, 3, "String", "&optional", "Integer"));
 	
 		
@@ -301,93 +305,96 @@ Object smpInteger_xor(Object obj, int argc, Object argv[])
 	}
 }
 
-int smpInteger_cmp_cint(Object obj, int argc, Object argv[])
+Object smpInteger_inc(Object obj, int argc, Object argv[])
 {
-	if (smpType_id_eq(argv[0], smpType_id_int)) {
-		int num = mpz_cmp(obj_core(mpz_t, obj), obj_core(mpz_t, argv[0]));
-		if (num > 0) num = 1;
-		if (num < 0) num = -1;
+	return smpInteger_add(obj, 1, &smpInteger_one);
+}
+
+Object smpInteger_dec(Object obj, int argc, Object argv[])
+{
+	return smpInteger_sub(obj, 1, &smpInteger_one);
+}
+
+int smpInteger_cmp_cint(Object *err, Object obj, Object arg)
+{
+	if (smpType_id_eq(arg, smpType_id_int)) {
+		int num = mpz_cmp(obj_core(mpz_t, obj), obj_core(mpz_t, arg));
 		return num;
-	} else if (smpType_id_eq(argv[0], smpType_id_float)) {
-		return smpFloat_cmp_cint(argv[0], 1, &obj);
+	} else if (smpType_id_eq(arg, smpType_id_float)) {
+		return smpFloat_cmp_cint(err, arg, obj);
 	} else {
+		*err = smpGlobal_throw(smpTypeError_init(
+				&obj_core(SmpType, smp_getclass("Number")), 
+				arg));
 		return -2;
 	}
 }
 
 Object smpInteger_cmp(Object obj, int argc, Object argv[])
 {
-	int num = smpInteger_cmp_cint(obj, argc, argv);
-	if (num == -2)
-		return smpGlobal_throw(smpTypeError_init(
-				&obj_core(SmpType, smp_getclass("Number")), 
-				argv[0]));
-	
+	Object err = smp_nil;
+	int num = smpInteger_cmp_cint(&err, obj, argv[0]);
+	if (smpType_id_eq(err, smpType_id_thrown))
+		return err;
 	return smpInteger_init_clong((long) num);
 }
 
 Object smpInteger_equalp(Object obj, int argc, Object argv[])
 {
-	int num = smpInteger_cmp_cint(obj, argc, argv);
-	if (num == -2)
-		return smpGlobal_throw(smpTypeError_init(
-				&obj_core(SmpType, smp_getclass("Number")), 
-				argv[0]));
+	Object err = smp_nil;
+	int num = smpInteger_cmp_cint(&err, obj, argv[0]);
+	if (smpType_id_eq(err, smpType_id_thrown))
+		return err;
 	
 	return smpBool_init(num == 0);
 }
 
 Object smpInteger_nequalp(Object obj, int argc, Object argv[])
 {
-	int num = smpInteger_cmp_cint(obj, argc, argv);
-	if (num == -2)
-		return smpGlobal_throw(smpTypeError_init(
-				&obj_core(SmpType, smp_getclass("Number")), 
-				argv[0]));
+	Object err = smp_nil;
+	int num = smpInteger_cmp_cint(&err, obj, argv[0]);
+	if (smpType_id_eq(err, smpType_id_thrown))
+		return err;
 	
 	return smpBool_init(num != 0);
 }
 
 Object smpInteger_lt(Object obj, int argc, Object argv[])
 {
-	int num = smpInteger_cmp_cint(obj, argc, argv);
-	if (num == -2)
-		return smpGlobal_throw(smpTypeError_init(
-				&obj_core(SmpType, smp_getclass("Number")), 
-				argv[0]));
+	Object err = smp_nil;
+	int num = smpInteger_cmp_cint(&err, obj, argv[0]);
+	if (smpType_id_eq(err, smpType_id_thrown))
+		return err;
 	
 	return smpBool_init(num < 0);
 }
 
 Object smpInteger_le(Object obj, int argc, Object argv[])
 {
-	int num = smpInteger_cmp_cint(obj, argc, argv);
-	if (num == -2)
-		return smpGlobal_throw(smpTypeError_init(
-				&obj_core(SmpType, smp_getclass("Number")), 
-				argv[0]));
+	Object err = smp_nil;
+	int num = smpInteger_cmp_cint(&err, obj, argv[0]);
+	if (smpType_id_eq(err, smpType_id_thrown))
+		return err;
 	
 	return smpBool_init(num <= 0);
 }
 
 Object smpInteger_ge(Object obj, int argc, Object argv[])
 {
-	int num = smpInteger_cmp_cint(obj, argc, argv);
-	if (num == -2)
-		return smpGlobal_throw(smpTypeError_init(
-				&obj_core(SmpType, smp_getclass("Number")), 
-				argv[0]));
+	Object err = smp_nil;
+	int num = smpInteger_cmp_cint(&err, obj, argv[0]);
+	if (smpType_id_eq(err, smpType_id_thrown))
+		return err;
 	
 	return smpBool_init(num >= 0);
 }
 
 Object smpInteger_gt(Object obj, int argc, Object argv[])
 {
-	int num = smpInteger_cmp_cint(obj, argc, argv);
-	if (num == -2)
-		return smpGlobal_throw(smpTypeError_init(
-				&obj_core(SmpType, smp_getclass("Number")), 
-				argv[0]));
+	Object err = smp_nil;
+	int num = smpInteger_cmp_cint(&err, obj, argv[0]);
+	if (smpType_id_eq(err, smpType_id_thrown))
+		return err;
 	
 	return smpBool_init(num > 0);
 }
@@ -397,8 +404,75 @@ Object smpInteger_eq(Object obj, int argc, Object argv[])
 	return smpInteger_equalp(obj, argc, argv);
 }
 
-long smpInteger_to_clong(Object obj)
+Object smpInteger_range(Object obj, int argc, Object argv[])
 {
+	/* 0: List
+	 * 1: Array
+	 */
+	int res_type = 0;
+	
+	if (argc > 1) {
+		if (smpString_equalp_cstr(argv[1], "Array"))
+			res_type = 1;
+		else if (smpString_equalp_cstr(argv[1], "List"))
+			res_type = 0;
+		else return smpGlobal_throw(smpException_init_fmt(
+			smp_getclass("ArgumentError"), 
+			"Invalid range type %s (expected \"Array\" or \"List\").", 
+			argv[1]));
+	}
+	
+	Object min = obj;
+	Object ctr = min;
+	Object max = argv[0];
+	Object cmp_ret = smp_nil;
+	Object res = smp_nil;
+	
+	;
+	
+	if (res_type == 0) {
+		res = smp_nil;
+		
+		while (TRUE) {
+			cmp_ret = smpObject_funcall(ctr, "<", 1, &max);
+			check_for_thrown(cmp_ret, );
+			if (!smpObject_truep_c(cmp_ret))
+				break;
+			
+			res = smpObject_cons_c(ctr, res);
+			ctr = smpObject_funcall(ctr, "inc", 0, NULL);
+			check_for_thrown(ctr, );
+		}
+		
+		res = smpList_reverse(res, 0, NULL);
+		
+	} else {
+		res = smpArray_init();
+		
+		while (TRUE) {
+			cmp_ret = smpObject_funcall(ctr, "<", 1, &max);
+			check_for_thrown(cmp_ret, );
+			if (!smpObject_truep_c(cmp_ret))
+				break;
+			
+			smpArray_add_now(res, 1, &ctr);
+			ctr = smpObject_funcall(ctr, "inc", 0, NULL);
+			check_for_thrown(ctr, );
+		}
+	}
+	
+	;
+	return res;
+}
+
+long smpInteger_to_clong(Object *ret, Object obj)
+{
+	if (!mpz_fits_slong_p(obj_core(mpz_t, obj))) {
+		*ret = smpGlobal_throw(smpException_init_fmt(
+			smp_getclass("IndexOutOfBoundsException"), "%ld", index));
+		return LONG_MAX;
+	}
+	
 	return mpz_get_si(obj_core(mpz_t, obj));
 }
 

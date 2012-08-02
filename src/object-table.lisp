@@ -56,8 +56,9 @@
     (set-prec '("=>") 21)
     (set-prec '("!" "~") 22)
     (set-prec '("**") 23)
-    (set-prec '(".") 24)
-	(set-prec '("`" "," "@") 25)
+    (set-prec '("at") 24)
+    (set-prec '(".") 25)
+	(set-prec '("`" "," "@") 26)
     '(t 19))))
 
 ;;; Gives the association for a symbol.
@@ -205,10 +206,12 @@
 					"Object"))
     (make-class-fun smp-global "while" '(19 "Object" "Object"))
     (make-class-fun smp-global "array" '(19 "&rest" "Object"))
+    (make-class-fun smp-global "hash" '(19 "&rest" "Object"))
     (make-class-fun smp-global "list" '(19 "&rest" "Object"))
     (make-class-fun smp-global "print" '(19 "Object"))
     (make-class-fun smp-global "printf" '(19 "String" "&rest" "Object"))
     (make-class-fun smp-global "println" '(19 "Object"))
+    (make-class-fun smp-global "rand" '(19 "Number" "&optional" "Integer"))
   
     (setf smp-sym (make-smp-class "Symbol" 'object))
     (setf smp-class (make-smp-class "Class" 'object :finalp t))

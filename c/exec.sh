@@ -1,1 +1,1 @@
-llc user.ll -disable-cfi && gcc -O3 main.s user.s -lgmp -lmpfr -w && ./a.out
+llc user.ll -disable-cfi && gcc main.s user.s ../lib/bdwgc/gc.a -lgmp -lmpfr -w && ./a.out

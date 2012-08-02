@@ -6390,7 +6390,7 @@ define i32 @test_hash() nounwind {
   %21 = bitcast %struct.obj_struct* %9 to i8*
   %22 = bitcast %struct.obj_struct* %hash to i8*
   call void @llvm.memcpy.p0i8.p0i8.i64(i8* %21, i8* %22, i64 32, i32 8, i1 false)
-  call void @smpHash_get(%struct.obj_struct* sret %get, %struct.obj_struct* byval %9, i32 1, %struct.obj_struct* %key)
+  call void @smpHash_at(%struct.obj_struct* sret %get, %struct.obj_struct* byval %9, i32 1, %struct.obj_struct* %key)
   call void (%struct.obj_struct*, i8*, ...)* @smp_printf(%struct.obj_struct* sret %10, i8* getelementptr inbounds ([8 x i8]* @.str87, i32 0, i32 0), i32 1, %struct.obj_struct* %get)
   store i32 1, i32* @gc_add_objectsp, align 4
   ret i32 0
@@ -6464,7 +6464,7 @@ define void @smpHash_add_now(%struct.obj_struct* sret %agg.result, %struct.obj_s
   ret void
 }
 
-define void @smpHash_get(%struct.obj_struct* sret %agg.result, %struct.obj_struct* byval %obj, i32 %argc, %struct.obj_struct* %argv) nounwind {
+define void @smpHash_at(%struct.obj_struct* sret %agg.result, %struct.obj_struct* byval %obj, i32 %argc, %struct.obj_struct* %argv) nounwind {
   %1 = alloca i32, align 4
   %2 = alloca %struct.obj_struct*, align 8
   %hash = alloca %struct.smpHash_struct, align 8

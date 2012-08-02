@@ -7,7 +7,7 @@
  *  Header file for classes that are fundamental to the object structure.
  */
 
-#include "gc.h"
+#include "object.h"
 
 /* 
  * 
@@ -73,19 +73,28 @@ int smpList_create_class();
 #define smpList_car_c(obj) smpPair_car_c(obj)
 #define smpList_cdr_c(obj) smpPair_cdr_c(obj)
 
+Object smpList_add(Object obj, int argc, Object argv[]);
 Object smpList_add_now(Object obj, int argc, Object argv[]);
+Object smpList_append(Object obj, int argc, Object argv[]);
+Object smpList_append_now(Object obj, int argc, Object argv[]);
+Object smpList_at(Object obj, int argc, Object argv[]);
+Object smpList_at_c(Object obj, size_t index);
+Object smpList_at_assign(Object obj, int argc, Object argv[]);
+Object smpList_at_assign_c(Object obj, size_t index, Object val);
 Object smpList_car(Object obj, int argc, Object argv[]);
 Object smpList_cdr(Object obj, int argc, Object argv[]);
+Object smpList_concat(Object obj, int argc, Object argv[]);
+Object smpList_concat_now(Object obj, int argc, Object argv[]);
 
 /* Clears the list. Note that this does not clear the objects inside the list.
  */
 Object smpList_clear(Object obj, int argc, Object argv[]);
 
+Object smpList_copy(Object obj, int argc, Object argv[]);
+Object smpList_each(Object obj, int argc, Object argv[]);
 Object smpList_emptyp(Object obj, int argc, Object argv[]);
 Object smpList_equalp(Object obj, int argc, Object argv[]);
 Object smpList_gc_mark(Object obj, int argc, Object argv[]);
-Object smpList_get(Object obj, int argc, Object argv[]);
-Object smpList_get_clong(Object obj, long index);
 Object smpList_init(SmpList list);
 
 Object smpList_length(Object obj, int argc, Object argv[]);
@@ -93,6 +102,16 @@ long smpList_length_clong(Object obj);
 
 Object smpList_map(Object obj, int argc, Object argv[]);
 Object smpList_reduce(Object obj, int argc, Object argv[]);
+Object smpList_reverse(Object obj, int argc, Object argv[]);
+
+#define SMPLIST_SORT_AS_ARRAY 8
+
+Object smpList_sort(Object obj, int argc, Object argv[]);
+Object smpList_nsort(Object obj, int argc, Object argv[]);
+Object smpList_sort_rec(Object obj, size_t length, Object cmp_fun);
+
+Object smpList_to_list(Object obj, int argc, Object argv[]);
+Object smpList_to_a(Object obj, int argc, Object argv[]);
 
 /* 
  * Takes one optional argument. If given, separates elements by the string in 
@@ -155,10 +174,19 @@ Object smpBool_xor(Object obj, int argc, Object argv[]);
 
 int smpNil_create_class();
 
+Object smpNil_add(Object obj, int argc, Object argv[]);
+Object smpNil_add_now(Object obj, int argc, Object argv[]);
 Object smpNil_car(Object obj, int argc, Object argv[]);
 Object smpNil_cdr(Object obj, int argc, Object argv[]);
+Object smpNil_concat(Object obj, int argc, Object argv[]);
+Object smpNil_copy(Object obj, int argc, Object argv[]);
+Object smpNil_each(Object obj, int argc, Object argv[]);
 Object smpNil_emptyp(Object obj, int argc, Object argv[]);
 Object smpNil_equalp(Object obj, int argc, Object argv[]);
+Object smpNil_length(Object obj, int argc, Object argv[]);
+Object smpNil_map(Object obj, int argc, Object argv[]);
+Object smpNil_reduce(Object obj, int argc, Object argv[]);
+Object smpNil_reverse(Object obj, int argc, Object argv[]);
 Object smpNil_to_s(Object obj, int argc, Object argv[]);
 Object smpNil_write(Object obj, int argc, Object argv[]);
 
@@ -261,6 +289,8 @@ typedef struct argspec_struct {
 	
 	/* If true, this argument is optional. */
 	int optionalp : 1;
+	
+	int has_default_valp : 1;
 	Object default_val;
 	
 	/* If true, this argument should contain a list of the arguments at the end 
@@ -380,7 +410,7 @@ typedef struct smpstrstruct {
 
 int smpstrcreate_class();
 
-int obj_init_str(Object *obj, char *str);
+int obj_init_str(Object *obj, const char *str);
 
 Object smpString_add(Object obj, int argc, Object argv[]);
 Object smpString_add_now(Object obj, int argc, Object argv[]);
@@ -390,7 +420,7 @@ int smpString_equalp_cstr(Object obj, char *str);
 
 /* Initializes a String from a C string.
  */
-Object smpString_init(char *str);
+Object smpString_init(const char *str);
 
 /* Initializes a String from a C string of a given length. If length is greater 
  * than the length of str, the initialized string will still be no longer than 
@@ -408,8 +438,9 @@ Object smpString_init_ref(char **str);
  */
 Object smpString_init_fmt(char *format, ...);
 
+Object smpString_length(Object obj, int argc, Object argv[]);
 Object smpString_reverse(Object obj, int argc, Object argv[]);
-Object smpstrsubstring(Object obj, int start, int length);
+Object smpString_substring(Object obj, int start, int length);
 
 char * smpString_to_cstr(Object obj);
 

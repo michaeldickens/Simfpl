@@ -107,16 +107,17 @@ Object smpInteger_ior(Object obj, int argc, Object argv[]);
 Object smpInteger_not(Object obj, int argc, Object argv[]);
 Object smpInteger_xor(Object obj, int argc, Object argv[]);
 
-#define smpInteger_inc(obj) smpInteger_add((obj), 1, &smpInteger_one)
-#define smpInteger_dec(obj) smpInteger_sub((obj), 1, &smpInteger_one)
+Object smpInteger_inc(Object obj, int argc, Object argv[]);
+Object smpInteger_dec(Object obj, int argc, Object argv[]);
 
 /* 
  * Comparison functions.
  */
  
-/* See smpInteger_cmp(). If argv[0] is the wrong type, returns -2.
+/* See smpInteger_cmp(). If there is an error, it puts it in *err and 
+ * returns -2.
  */
-int smpInteger_cmp_cint(Object obj, int argc, Object argv[]);
+int smpInteger_cmp_cint(Object *err, Object obj, Object arg);
 
 #define smpInteger_eq_cint(obj, argc, argv) (smpInteger_cmp_cint((obj), (argc), (argv)) == 0)
 #define smpInteger_ne_cint(obj, argc, argv) (smpInteger_cmp_cint((obj), (argc), (argv)) != 0)
@@ -125,8 +126,8 @@ int smpInteger_cmp_cint(Object obj, int argc, Object argv[]);
 #define smpInteger_ge_cint(obj, argc, argv) (smpInteger_cmp_cint((obj), (argc), (argv)) >= 0)
 #define smpInteger_gt_cint(obj, argc, argv) (smpInteger_cmp_cint((obj), (argc), (argv)) >  0)
 
-/* Compares an integer to another number, argv[0]. If obj > argv[0], returns 1. 
- * If obj == argv[0], returns 0. If obj < argv[0], returns -1.
+/* Compares an integer to another number, argv[0]. Returns positive if 
+ * obj > argv[0], 0 if obj == argv[0], or negative if obj < argv[0].
  */
 Object smpInteger_cmp(Object obj, int argc, Object argv[]);
 
@@ -138,8 +139,9 @@ Object smpInteger_ge(Object obj, int argc, Object argv[]);
 Object smpInteger_gt(Object obj, int argc, Object argv[]);
 
 Object smpInteger_eq(Object obj, int argc, Object argv[]);
+Object smpInteger_range(Object obj, int argc, Object argv[]);
 
-long smpInteger_to_clong(Object obj);
+long smpInteger_to_clong(Object *ret, Object obj);
 
 /* Takes a single optional argument to indicate the base.
  */
@@ -183,7 +185,7 @@ Object smpFloat_div(Object obj, int argc, Object argv[]);
 Object smpFloat_pow(Object obj, int argc, Object argv[]);
 
 /* Comparison operations. */
-int smpFloat_cmp_cint(Object obj, int argc, Object argv[]);
+int smpFloat_cmp_cint(Object *err, Object obj, Object arg);
 Object smpFloat_cmp(Object obj, int argc, Object argv[]);
 
 Object smpFloat_equalp(Object obj, int argc, Object argv[]);

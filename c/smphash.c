@@ -11,7 +11,9 @@ int smpHash_create_class()
 	smpGlobal_class("Hash", &smpType_object, 0);
 	Object hash = smp_getclass("Hash");
 	
-	smpType_def(hash, SCOPE_INSTANCE_DATA, "add!", smpFunction_init(&smpHash_add_now, 2, "Nil", "Object"));
+	smpType_def(hash, SCOPE_INSTANCE_DATA, "add!", smpFunction_init(&smpHash_add_now, 2, "Object", "Pair"));
+	smpType_def(hash, SCOPE_INSTANCE_DATA, "at", smpFunction_init(&smpHash_at, 2, "Object", "Object"));
+	smpType_def(hash, SCOPE_INSTANCE_DATA, "at=", smpFunction_init(&smpHash_at_assign, 3, "Object", "Object", "Object"));
 	smpType_def(hash, SCOPE_INSTANCE_DATA, "clear", smpFunction_init(&smpHash_clear, 1, "Nil"));
 	smpType_def(hash, SCOPE_INSTANCE_DATA, "gc_mark", smpFunction_init(&smpHash_gc_mark, 1, "Nil"));
 	smpType_def(hash, SCOPE_INSTANCE_DATA, "to_s", smpFunction_init(&smpHash_to_s, 1, "String"));
@@ -22,11 +24,11 @@ int smpHash_create_class()
 
 Object smpHash_add_now(Object obj, int argc, Object argv[])
 {
-	smp_type_check(argv[0], "List");
+	smp_type_check(argv[0], "Pair");
 	
 	smpHash_core_add_now((SmpHash *) obj.core, argv[0]);
 			
-	return smp_nil;
+	return smpPair_cdr_c(argv[0]);
 }
 
 int smpHash_core_add_now(SmpHash *hash, Object pair)
@@ -66,6 +68,43 @@ int smpHash_core_add_now(SmpHash *hash, Object pair)
 	}
 	
 	return 0;
+}
+
+Object smpHash_at(Object obj, int argc, Object argv[])
+{
+	SmpHash hash = obj_core(SmpHash, obj);
+	int index = 0;
+	int code = obj_hash(&index, argv[0]);
+	if (code) return smpInteger_init_clong((long) code);
+	
+	index %= hash.capacity;
+	
+	if (hash.a[index].core == NULL || 
+			smpType_id_eq(hash.a[index], smpType_id_list) == FALSE)
+		return smp_nil;
+
+	
+	Object *list = &hash.a[index];
+	while (list) {
+		Object pair = obj_core(SmpList, *list).car;
+		
+		Object equal_test = smpObject_funcall(argv[0], "eql?", 1, 
+								&(obj_core(SmpList, pair).car));
+		check_for_thrown(equal_test, NULL);
+		if (smpType_id_eq(pair, smpType_id_list) && smpBool_to_cint(equal_test))
+			return smpList_cdr(pair, 0, NULL);
+		
+		list = obj_core(SmpList, *list).cdr;
+	}
+	
+	return obj_core(SmpHash, obj).default_return_value;
+}
+
+Object smpHash_at_assign(Object obj, int argc, Object argv[])
+{
+	Object pair = smpPair_init(argv[0], argv[1]);
+	check_for_thrown(pair, NULL);
+	return smpHash_add_now(obj, 1, &pair);
 }
 
 Object smpHash_clear(Object obj, int argc, Object argv[])
@@ -113,36 +152,6 @@ Object smpHash_gc_mark(Object obj, int argc, Object argv[])
 	return smp_nil;
 }
 
-Object smpHash_get(Object obj, int argc, Object argv[])
-{
-	SmpHash hash = obj_core(SmpHash, obj);
-	int index = 0;
-	int code = obj_hash(&index, argv[0]);
-	if (code) return smpInteger_init_clong((long) code);
-	
-	index %= hash.capacity;
-	
-	if (hash.a[index].core == NULL || 
-			smpType_id_eq(hash.a[index], smpType_id_list) == FALSE)
-		return smp_nil;
-
-	
-	Object *list = &hash.a[index];
-	while (list) {
-		Object pair = obj_core(SmpList, *list).car;
-		
-		Object equal_test = smpObject_funcall(argv[0], "eql?", 1, 
-								&(obj_core(SmpList, pair).car));
-		check_for_thrown(equal_test, NULL);
-		if (smpType_id_eq(pair, smpType_id_list) && smpBool_to_cint(equal_test))
-			return smpList_cdr(pair, 0, NULL);
-		
-		list = obj_core(SmpList, *list).cdr;
-	}
-	
-	return obj_core(SmpHash, obj).default_return_value;
-}
-
 Object smpHash_init()
 {
 	return smpHash_init_capacity(HASH_DEFAULT_LENGTH);
@@ -159,6 +168,9 @@ Object smpHash_init_capacity(size_t capacity)
 
 SmpHash smpHash_core_init_capacity(size_t capacity)
 {
+	if (capacity < HASH_DEFAULT_LENGTH)
+		capacity = HASH_DEFAULT_LENGTH;
+	
 	SmpHash hash;
 	hash.capacity = capacity;
 	hash.a = smp_malloc(sizeof(Object) * hash.capacity);
@@ -190,7 +202,7 @@ Object smpHash_make_string(Object obj, char *fun)
 	Object str, res = smpString_init("(hash");
 
 	Object space = smpString_init(" ");
-	Object l_paren = smpString_init("(");
+	Object arrow = smpString_init("->");
 	Object r_paren = smpString_init(")");
 	
 	size_t i;
@@ -198,36 +210,23 @@ Object smpHash_make_string(Object obj, char *fun)
 		if (hash.a[i].core != NULL) {
 			Object *list = &hash.a[i];
 			while (list) {
-				str = smpObject_funcall(obj_core(SmpList, *list).car, fun, 0, NULL);
+				str = smpObject_funcall(obj_core(SmpList, *list).car, fun, 
+				 	0, NULL);
 				if (smpType_name_eq(str, "Thrown")) {
-					obj_clear(&res);
-					obj_clear(&space);
-					obj_clear(&l_paren);
-					obj_clear(&r_paren);
 					return str;
-				} else if (smpType_name_eq(str, "String") == FALSE) {
-					obj_clear(&res);
-					obj_clear(&space);
-					obj_clear(&l_paren);
-					obj_clear(&r_paren);
+				} else if (!smpType_name_eq(str, "String")) {
 					return smpGlobal_throw(smpTypeError_init(
 						(SmpType *) smp_getclass("String").core, str));
 				}
-								
+				
 				smpString_add_now(res, 1, &space);
-				smpString_add_now(res, 1, &l_paren);
 				smpString_add_now(res, 1, &str);
-				smpString_add_now(res, 1, &r_paren);
 				list = obj_core(SmpList, *list).cdr;
 			}
 		}
 	}
 	
 	smpString_add_now(res, 1, &r_paren);
-	
-	obj_clear(&space);
-	obj_clear(&l_paren);
-	obj_clear(&r_paren);
 	
 	return res;
 }

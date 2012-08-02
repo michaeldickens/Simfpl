@@ -22,6 +22,7 @@
       "}" *newline* *newline*))))
 
 (defun smp-compile (str)
+  (load "codegen.lisp")
   (handler-case
     (codegen (sexpgen (parse-string str)))
     (compile-error (ce) 

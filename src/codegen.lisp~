@@ -150,17 +150,24 @@
       (setf *prev-instruction* "@smp_true")
       "")
 
+    ;; If sexp is an integer less than 2**31, instantiate it using a native 
+    ;; integer. Otherwise, instantiate it using a native string.
     ((typep sexp 'number)
-      ;; WARNING: this will fail if sexp is greater than 64 bits
       (setf *prev-instruction* (next-instruction))
       (concatenate 'string 
 	indent (instruction-counter-to-string) 
 	  " = alloca " *obj-noptr* ", align 8" *newline*
-	indent "call void @smpInteger_init_clong(" *obj-decl* "sret " 
-	  (instruction-counter-to-string)  ", "
-	  (cond ((typep sexp 'integer) "i64")
-	        ((typep sexp 'float) "float"))
-	  " " (write-to-string sexp) ")" *newline*))
+	(if (and (typep sexp 'integer) (< sexp (expt 2 31)))
+	  (concatenate 'string 
+	    indent "call void @smpInteger_init_clong(" *obj-decl* "sret "
+	      (instruction-counter-to-string) ", i64 " 
+	      (write-to-string sexp) ")" *newline*)
+	  (concatenate 'string 
+    	    indent "call void @smp" (if (typep sexp 'integer) 
+				      "Integer" 
+				      "Float")
+  	      "_init_str(" *obj-decl* "sret " (instruction-counter-to-string) 
+	      ", " (make-string-literal sexp) ")" *newline*))))
 
     ((typep sexp 'string)
       (setf *prev-instruction* (next-instruction))

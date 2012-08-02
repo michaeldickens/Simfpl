@@ -8,11 +8,6 @@
 
 Object obj_init(SmpType *type)
 {
-	if (gc_runningp) {
-		internal_error("Cannot initialize %s while running the garbage collector.", 
-				type->name);
-	}
-	
 	Object obj;
 	obj.gc_mark = smp_malloc(sizeof(int));
 	*obj.gc_mark = FALSE;
@@ -38,9 +33,7 @@ Object obj_init(SmpType *type)
 		obj.core = smp_malloc(sizeof(StandardCore));
 		obj_core(StandardCore, obj) = core;
 	}
-	
-//	gc_stack_push(&obj);
-	
+		
 	return obj;
 }
 
@@ -53,7 +46,8 @@ int obj_hash(int *dest, Object obj)
 	
 	Object hash = smpObject_funcall(obj, "compute-hash", 0, NULL);
 	if (smpType_id_eq(hash, smpType_id_int)) {
-		*dest = smpInteger_to_clong(obj);
+		Object ret = smp_nil;
+		*dest = smpInteger_to_clong(&ret, obj);
 		return 0;
 	}
 	return 1;
@@ -66,6 +60,7 @@ Object obj_clear(Object *obj)
 		return smp_nil;
 	
 	smpObject_funcall(*obj, "clear", 0, NULL);
+	*obj->gc_mark = 0;
 	smp_free(obj->gc_mark);
 	smp_free(obj->core);
 	obj->type = NULL;
@@ -78,7 +73,7 @@ Object obj_clear(Object *obj)
 Object objid_init(int type_id)
 {
 	Object res = obj_init(&smpType_id);
-	res.core = (void *) type_id;
+	res.core = (void *) (size_t) type_id;
 	return res;
 }
 
@@ -95,6 +90,24 @@ Object obj_types_equalp(Object obj1, Object obj2)
 Object smpObject_clear(Object obj, int argc, Object argv[])
 {
 	return smp_nil;
+}
+
+int smpObject_cmp_fast(Object *err, Object obj, Object arg)
+{
+	Object res;
+	if (smpType_id_eq(obj, smpType_id_int)) {
+		return smpInteger_cmp_cint(err, obj, arg);
+	} else if (smpType_id_eq(obj, smpType_id_float)) {
+		return smpFloat_cmp_cint(err, obj, arg);
+	} else {
+		res = smpObject_funcall(obj, "cmp", 1, &arg);
+		if (smpType_id_eq(res, smpType_id_int))
+			return (int) smpInteger_to_clong(err, res);
+		else {
+			*err = res;
+			return -2;
+		}
+	}
 }
 
 Object smpObject_cons(Object obj, int argc, Object argv[])

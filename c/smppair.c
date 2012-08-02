@@ -89,12 +89,12 @@ Object smpPair_set_cdr_now(Object obj, int argc, Object argv[])
 
 Object smpPair_to_s(Object obj, int argc, Object argv[])
 {
-	return smpGlobal_sprintf("(%s %s)", smpPair_car_c(obj), smpPair_cdr_c(obj));
+	return smpGlobal_sprintf("(%s -> %s)", smpPair_car_c(obj), smpPair_cdr_c(obj));
 }
 
 Object smpPair_write(Object obj, int argc, Object argv[])
 {
-	return smpGlobal_sprintf("(%w %w)", smpPair_car_c(obj), smpPair_cdr_c(obj));
+	return smpGlobal_sprintf("(%w -> %w)", smpPair_car_c(obj), smpPair_cdr_c(obj));
 }
 
 

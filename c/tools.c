@@ -6,29 +6,23 @@
  *
  */
 
+int gc_mark_recursive(char *key, Object obj)
+{
+	return 0;
+}
+
 /* Having this separate function is kind of pointless because regular 
  * expressions, snprintf, and possibly other things all use malloc(). It works 
  * fine as long as smp_malloc() just calls malloc().
  */
-void * smp_malloc(size_t bytes)
+void * smp_malloc_fun(size_t bytes)
 {
-	return malloc(bytes);
-}
-
-void * smp_realloc(void *mem, size_t bytes)
-{
-	return realloc(mem, bytes);
+	return smp_malloc(bytes);
 }
 
 void * smp_realloc_size(void *mem, size_t old_bytes, size_t new_bytes)
 {
 	return smp_realloc(mem, new_bytes);
-}
-
-void smp_free(void *mem)
-{
-	if (mem)
-		free(mem);
 }
 
 void smp_free_size(void *mem, size_t bytes)
@@ -45,6 +39,9 @@ void internal_error(char *format, ...)
 	fprintf(stderr, "\n");
 	va_end(args);
 	
+	/* This does not use exit(1) because exit(1) does not provide a 
+	 * backtrace.
+	 */
 	int *intentional_crash = 100 - 50*2;
 	*intentional_crash = 1;
 }

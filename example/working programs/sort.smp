@@ -1,0 +1,9 @@
+# Note: Quotation marks in this file are escaped so that these lines can be 
+# copied and pasted into a string. They will not work properly if run 
+# directly.
+
+println ((println ((0 range 32 \"Array\") map ((x) => (rand 20)))) sort)
+
+println ((println (list \"hello\" \"pretty\" \"party\" \"lets\" \"go\" \"to\" \"a\" \"movie\" \"now\" \"today\")) sort ((a b) => ((a length) <= (b length))))
+
+println ((println ((0 range 8 \"Array\") map ((x) => (list (rand 20) (rand 20))))) sort ((a b) => ((a at 0 + a at 1) <= (b at 0 + b at 1))))

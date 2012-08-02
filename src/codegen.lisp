@@ -182,21 +182,16 @@
 
     ((typep sexp 'smp-symbol)
       (if (scope-exists sexp)
-	(if (match-whole "[A-Z][a-z]*" (smp-symbol-to-string sexp))
-	  (progn  ; if the symbol is a class name
-	    (setf *prev-instruction* (next-instruction))
-	    (dotimes (number 5) (next-instruction))
-	    (concatenate 'string 
-	      indent (prev-instruction-to-string) " = alloca "
-	        *obj-noptr* ", align 8" *newline*
-	      indent "call void @scope_get(" *obj-decl* 
-	        (prev-instruction-to-string)  ", " 
-		(make-string-literal sexp) ")" *newline*
-	      (check-for-return-form *prev-instruction*)))
-          (progn  ; if the symbol is a variable name
-	    (setf *prev-instruction* (make-smp-name (car *current-class*) 
-						    sexp))
-	    ""))
+	(progn
+	  (setf *prev-instruction* (next-instruction))
+	  (dotimes (number 5) (next-instruction))
+	  (concatenate 'string 
+	    indent (prev-instruction-to-string) " = alloca "
+	      *obj-noptr* ", align 8" *newline*
+	    indent "call void @scope_get(" *obj-decl* 
+	      (prev-instruction-to-string)  ", " 
+	      (make-string-literal sexp) ")" *newline*
+	    (check-for-return-form *prev-instruction*)))
 	(error 'undefined-symbol-error :message sexp)))
 
     ((typep sexp 'list)
@@ -216,3 +211,38 @@
 	(t (llvm-funcall (car sexp) (cadr sexp) (cddr sexp) :indent indent))))
     (t nil))) ; TODO: add error handling code
 
+
+
+;;; Given an intermediate-code s-expression, compiles it to LLVM. Puts it 
+;;; inside a main() function and sends the final result to the output file.
+;;; 
+;;; TODO: Make the filepath flexible.
+(defun codegen (sexp)
+  (let ((compiled-sexp (codegen-sexp sexp :indent "  "))
+	(rfile (open "../data/user-start.txt"))
+	(start-str nil)
+	(res nil)
+	(indent "  "))
+    (setf start-str
+      (reduce #'(lambda (total x) (concatenate 'string total x))
+        (loop for line = (read-line rfile nil) while line collect
+	      (format nil "~a~%" line))))
+    (close rfile)
+
+    (next-instruction)
+    (setf res (concatenate 'string start-str *newline*
+      *string-literals* *newline* 
+      *llvm-functions* *newline* 
+      "define void @smpGlobal_main(" *obj-decl* "sret %agg.result, "
+        *obj-decl* "byval %obj, i32 %argc, " *obj-decl* "%argv) {" *newline*
+      compiled-sexp 
+      (load-form *instruction-counter* *prev-instruction*)
+      (store-form *instruction-counter* "agg.result")
+      indent "ret void" *newline*
+      "}" *newline* *newline*))
+    
+    (let ((wfile (open "../c/user.ll" 
+		       :direction :output :if-exists :supersede)))
+      (write-string res wfile)
+      (close wfile))
+    res))

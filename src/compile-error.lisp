@@ -31,7 +31,7 @@
 (define-condition invalid-list-expansion-error (syntax-error)
   ((value :initarg :value :accessor :value)))
 
-(define-condition mismatched-parentheses-error (syntax-error)
+(define-condition mismatched-brackets-error (syntax-error)
   ())
 
 (define-condition mismatched-quotes-error (syntax-error)

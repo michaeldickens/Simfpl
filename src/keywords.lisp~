@@ -26,41 +26,34 @@
     (error 'function-redefinition-error :message (smp-symbol-to-string name)))
   (let ((compiled-value nil)
 	(res-instruction nil)
-	(smp-name (concatenate 'string 
-		    "%" (make-smp-name (car *current-class*) name)))
 	(var-exists (scope-exists name)))
     (setf compiled-value (codegen-sexp value :indent indent))
     (setf res-instruction (prev-instruction-to-string))
     (next-instruction)
-    (setf *prev-instruction* smp-name)
     (scope-add name)
     (concatenate 'string
       compiled-value
-      ;; Only allocate the variable if it hasn't already been allocated.
-      (if (not var-exists)
-	(concatenate 'string indent smp-name " = alloca " *obj-noptr* 
-	  ", align 8" *newline*)
-	"")
-      indent (instruction-counter-to-string) " = load " 
-        *obj-decl* res-instruction ", align 8" *newline*
-      indent "store " *obj-noptr* " " (instruction-counter-to-string) ", " 
-        *obj-decl* smp-name *newline*)))
+      indent (instruction-counter-to-string) " = call i32 @scope_add(" 
+        (make-string-literal (smp-symbol-to-string name)) ", " *obj-decl* 
+	"byval " res-instruction ")" *newline*)))
+
+
+(defun keyword-class (obj name parent body) nil)
 
 
 (defun keyword-lambda (args body &key (indent ""))
   (setf *lambda-num* (+ *lambda-num* 1))
   (keyword-def nil (make-smp-symbol (write-to-string *lambda-num*))
-    args body :indent indent))
-
-(defun keyword-class (obj name parent body) nil)
+    args body :indent indent :klass (list "Global" *global-funs*)))
 
 ;;; obj: Ignored.
 ;;; name: A smp-symbol representing the name of the function.
 ;;; args: A list of argument specifiers.
 ;;; body: A sexp representing the body of the function.
-(defun keyword-def (obj name args body &key (indent ""))
-  (let ((class-name (car *current-class*))
-	(flags (if (string= (car *current-class*) "Global")
+(defun keyword-def (obj name args body &key (indent "") 
+			(klass *current-class*))
+  (let ((class-name (car klass))
+	(flags (if (string= (car klass) "Global")
 		 1 ; SCOPE_CLASS_DATA
 		 0)) ; SCOPE_INSTANCE_DATA
 	(pure-args nil)
@@ -68,6 +61,7 @@
 	(saved-prev-instruction *prev-instruction*)
 	(compiled-body nil)
 	(compiled-klass nil)
+	(first-instruction nil)
 	(klass-instruction nil)
 	(last-instruction nil))
 
@@ -90,29 +84,52 @@
     (loop for arg in pure-args do
 	  (scope-add arg))
 
+    (if (equalp flags 1) ; 1 = SCOPE_CLASS_DATA
+      (make-class-fun (gethash (car klass) *classes*) 
+	  	      (smp-symbol-to-string name)
+		      (cons (get-prec name) args))
+      (make-instance-fun (gethash (car klass) *classes*) 
+	  	         (smp-symbol-to-string name)
+		         (cons (get-prec name) args)))
+
+
     (setf *instruction-counter* 0)
+    (setf first-instruction (next-instruction))
+    (dotimes (number (length pure-args)) (next-instruction))
     (setf compiled-body (codegen-sexp body :indent indent))
     (setf last-instruction (next-instruction))
+    (next-instruction)
     
-    (setf *llvm-functions* (concatenate 'string *llvm-functions*
+    (setf *llvm-functions* (concatenate 'string *llvm-functions* *newline* 
       "define void @" (make-smp-name class-name name) "("
         *obj-decl* "sret %agg.result, " *obj-decl* "byval %obj, i32 %argc, "
         *obj-decl* "%argv) {" *newline*
 
+      indent (instruction-to-string first-instruction)
+        " = call i32 @scope_push()" *newline*
+
       ;; Thanks to smpfun_call(), each argument in %argv maps to exactly one 
       ;; function parameter. This pulls them out into separate variables.
       (reduce #'(lambda (total n) (concatenate 'string total 
-          indent "%" (make-smp-name class-name (nth n pure-args)) 
-	    " = getelementptr inbounds " *obj-decl* "%argv, i32 " 
-	    (write-to-string n) *newline*))
-	(reduce #'(lambda (n x) 
-		    (if n (cons (+ (car n) 1) n) (list 0)))
-		pure-args :initial-value nil)
+	  (getelementptr-form (make-smp-name class-name (nth n pure-args))
+			      "argv" 
+			      (list (- (length pure-args) (+ n 1))))
+          indent (instruction-to-string (+ first-instruction n 1)) 
+	    " = call i32 @scope_add(" 
+	    (make-string-literal (smp-symbol-to-string (nth n pure-args))) 
+	    ", " *obj-decl* "byval %" (make-smp-name class-name 
+						     (nth n pure-args))
+	    ")" *newline*))
+	(reverse (reduce #'(lambda (xs x) 
+		     (if xs (cons (+ (car xs) 1) xs) (list 0)))
+		   pure-args :initial-value nil))
 	:initial-value "")
 
       compiled-body
       (load-form last-instruction *prev-instruction*)
       (store-form last-instruction "agg.result")
+      indent (instruction-to-string (+ last-instruction 1))
+        " = call i32 @scope_pop()" *newline*
       indent "ret void" *newline*
       "}" *newline*))
 

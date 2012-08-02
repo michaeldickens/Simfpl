@@ -100,25 +100,25 @@ int smp_thrown_exceptionp_c(Object obj)
 
 Object smpThrown_to_s(Object obj, int argc, Object argv[])
 {
-	DISABLE_GC_ACTIVEP;
+	;
 	Object exc_str = smpString_init("");
-	check_for_thrown(exc_str, ENABLE_GC_ACTIVEP);
+	check_for_thrown(exc_str, );
 	Object divider = smpString_init("\n");
-	check_for_thrown(divider, ENABLE_GC_ACTIVEP);
+	check_for_thrown(divider, );
 	
 	size_t i;
 	for (i = 0; i < obj_core(SmpThrown, obj).length; ++i) {
 		Object new_str = smpObject_funcall(obj_core(SmpThrown, obj).objs[i], 
 				"to_s", 0, NULL);
-		check_for_thrown(new_str, ENABLE_GC_ACTIVEP);
+		check_for_thrown(new_str, );
 		if (i > 0) smpString_add_now(exc_str, 1, &divider);
 		smpString_add_now(exc_str, 1, &new_str);
-		check_for_thrown(exc_str, ENABLE_GC_ACTIVEP);
+		check_for_thrown(exc_str, );
 	}
 	
 	char *str;
 	asprintf(&str, "<Thrown: %s>", smpString_to_cstr(exc_str));
-	ENABLE_GC_ACTIVEP;
+	;
 	return smpString_init_ref(&str);
 }
 

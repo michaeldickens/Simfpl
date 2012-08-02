@@ -43,8 +43,6 @@ int scope_pop()
 
 int scope_add(char *name, Object obj)
 {
-	int ret = gc_stack_push(&obj);
-	if (ret) return ret;
 	return minihash_add(scope_top, name, obj);
 }
 

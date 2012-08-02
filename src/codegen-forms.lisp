@@ -17,6 +17,18 @@
       indent "store " *obj-noptr* " " (instruction-to-string ,src) ", "
         *obj-decl* (instruction-to-string ,dest) ", align 8" *newline*))
 
+(defmacro getelementptr-form (src dest indices)
+  `(concatenate 'string
+      indent (instruction-to-string ,src) " = getelementptr inbounds " 
+        *obj-decl* (instruction-to-string ,dest) 
+	(reduce #'(lambda (total n-unique-name) (concatenate 'string total 
+	    ", i32 " (write-to-string (nth n-unique-name ,indices))))
+  	  (reverse (reduce #'(lambda (xs x) 
+		       (if xs (cons (+ (car xs) 1) xs) (list 0)))
+		     ,indices :initial-value nil))
+	  :initial-value "")
+	*newline*))
+
 (defmacro icmp-form (dest src)
   `(concatenate 'string
       indent (instruction-to-string ,dest) " = icmp ne i32 " 

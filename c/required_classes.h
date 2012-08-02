@@ -51,8 +51,7 @@ int smpGlobal_class_multiple(char *name, SmpType **parents,
 Object smpGlobal_fprint(FILE *fp, Object obj);
 Object smpGlobal_fprintf(FILE *fp, char *format, ...);
 
-/* Constructs a list.
- */
+Object smpGlobal_hash(Object obj, int argc, Object argv[]);
 Object smpGlobal_list(Object obj, int argc, Object argv[]);
 
 Object smpGlobal_main(Object obj, int argc, Object argv[]);
@@ -70,6 +69,14 @@ Object smp_printf_arg(Object obj, int argc, Object argv[]);
 /* Prints the object followed by a newline and returns the object. */
 Object smp_println(Object obj);
 Object smpGlobal_println_arg(Object obj, int argc, Object argv[]);
+
+/* 
+ * If argv[0] is an integer, returns an integer on [0, argv[0]). The 
+ *   largest possible value is 2**31 - 1.
+ * If argv[0] is not given, returns a float on [0, 1).
+ */
+Object smpGlobal_rand(Object obj, int argc, Object argv[]);
+Object smpGlobal_set_seed(Object obj, int argc, Object argv[]);
 
 /* 
  * Writes a string using the given format.
@@ -199,7 +206,13 @@ int smpArray_create_class();
  */
 Object smpArray_add_now(Object obj, int argc, Object argv[]);
 
+Object smpArray_at(Object obj, int argc, Object argv[]);
+Object smpArray_at_c(Object obj, size_t index);
+Object smpArray_at_assign(Object obj, int argc, Object argv[]);
+Object smpArray_at_assign_c(Object obj, size_t index, Object val);
+
 Object smpArray_clear(Object obj, int argc, Object argv[]);
+Object smpArray_copy(Object obj, int argc, Object argv[]);
 
 /* Initializes an empty array.
  */
@@ -220,6 +233,33 @@ Object smpArray_length(Object obj, int argc, Object argv[]);
 Object smpArray_map(Object obj, int argc, Object argv[]);
 Object smpArray_reduce(Object obj, int argc, Object argv[]);
 int smpArray_resize(SmpArray *arr, size_t size);
+Object smpArray_reverse(Object obj, int argc, Object argv[]);
+Object smpArray_reverse_now(Object obj, int argc, Object argv[]);
+
+/* Sorts an array using a combination of merge sort and insertion sort. 
+ * Takes a function as an optional argument. If no function is given, uses 
+ * cmp() as the comparator.
+ * 
+ * (arr sort) is equivalent to (arr sort ((a b) => (a <= b))).
+ */
+#define SMPARRAY_USE_INSERTION 16
+
+Object smpArray_sort(Object obj, int argc, Object argv[]);
+Object smpArray_sort_now(Object obj, int argc, Object argv[]);
+
+int smp_cmp_helper(Object *ret, Object cmp_fun, Object op1, Object op2);
+
+Object smpArray_sort_merge(Object *a, size_t length, Object *merger_space, Object cmp_fun);
+Object smpArray_sort_quick(Object *a, size_t last, Object cmp_fun);
+Object smpArray_sort_timmy(Object *a, size_t length, Object *merger_space, Object cmp_fun);
+SmpArray timmy_get_run(Object *ret, Object *a, size_t length, Object cmp_fun);
+
+Object smp_merge_sorted_arrays(Object *arr1, size_t length1, 
+	Object *arr2, size_t length2, Object *merger_space, Object cmp_fun);
+Object smpArray_sort_insertion(Object *a, size_t length, Object cmp_fun);
+
+Object smpArray_to_a(Object obj, int argc, Object argv[]);
+Object smpArray_to_list(Object obj, int argc, Object argv[]);
 Object smpArray_to_s(Object obj, int argc, Object argv[]);
 Object smpArray_write(Object obj, int argc, Object argv[]);
 
@@ -272,6 +312,12 @@ int smpparser_char_type(char c);
 int smpHash_core_add_now(SmpHash *hash, Object pair);
 Object smpHash_add_now(Object obj, int argc, Object argv[]);
 
+/* If the hash contains the given key, returns the corresponding value. If not, 
+ * returns the default return value.
+ */
+Object smpHash_at(Object obj, int argc, Object argv[]);
+Object smpHash_at_assign(Object obj, int argc, Object argv[]);
+
 Object smpHash_clear(Object obj, int argc, Object argv[]);
 int smpHash_core_clear(SmpHash *hash);
 
@@ -287,11 +333,6 @@ Object smpHash_gc_mark(Object obj, int argc, Object argv[]);
  * arg0: The function to be used.
  */
 Object smpHash_each(Object obj, int argc, Object argv[]);
-
-/* If the hash contains the given key, returns the corresponding value. If not, 
- * returns the default return value.
- */
-Object smpHash_get(Object obj, int argc, Object argv[]);
 
 Object smpHash_init();
 Object smpHash_init_capacity(size_t capacity);

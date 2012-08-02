@@ -17,6 +17,11 @@
 
 #include <gmp.h>
 #include <mpfr.h>
+#include "../lib/SFMT/SFMT.c"
+#include "../lib/bdwgc/include/gc.h"
+
+/* TODO: only on Unix systems */
+#include <sys/time.h>
 
 #define TRUE 1
 #define FALSE 0
@@ -30,12 +35,26 @@ struct membatch_stack {
 	struct smpList_struct *smplist[MEMBATCH_SIZE];
 };
 
-void * smp_malloc(size_t bytes);
+#define malloc(bytes) smp_malloc(bytes)
+#define realloc(mem, bytes) smp_realloc((mem), (bytes))
+#define free(mem) smp_free(mem)
 
-void * smp_realloc(void *mem, size_t bytes);
+/* Having this separate function may prove ineffective because regular 
+ * expressions, snprintf, and possibly other things all use malloc().
+ */
+#define smp_malloc(bytes) GC_malloc(bytes)
+#define smp_realloc(mem, bytes) GC_realloc((mem), (bytes))
+#define smp_free(mem) GC_free(mem)
+
+/* Used as a placeholder in case the garbage collector is ever implemented 
+ * again. Currently does nothing.
+ */
+int gc_mark_recursive(char *key, struct obj_struct obj);
+
+#define GC_MARK_OBJECT(obj) /* intentionally left blank */
+
+void * smp_malloc_fun(size_t bytes);
 void * smp_realloc_size(void *mem, size_t old_bytes, size_t new_bytes);
-
-void smp_free(void *mem);
 void smp_free_size(void *mem, size_t bytes);
 
 void internal_error(char *format, ...);

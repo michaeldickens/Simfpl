@@ -11,7 +11,7 @@ def average(xs) {
 }
 
 # average is 10
-println (Global average (list 8 10 9 9 14))
+println (Global average (list 8 7 9 12 14))
 }
 
 
@@ -21,8 +21,8 @@ This function also calculates the average of a list.
 ##
 {
 def average(xs) (
-  (xs reduce ((x y) => (x + y)) 0) / (xs length))
+  (xs reduce ((x y) => (x + y))) / (xs length))
 
 # average is 10
-println (Global average (list 8 10 9 9 14))
+println (Global average (list 8 7 9 12 14))
 }

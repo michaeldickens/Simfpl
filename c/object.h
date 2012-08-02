@@ -119,12 +119,12 @@ typedef struct obj_struct {
 /* Checks to see if the object is Thrown. If it is, returns it.
  */
 #define check_for_thrown(obj, clean_up) \
-	if (smpType_name_eq(obj, "Thrown")) { \
+	if (smp_thrown_exceptionp_c(obj)) { \
 		clean_up; \
 		return obj; \
 	}
 
-#define smpType_id_get(name) ((int) minihash_get(&smpType_ids, name).core)
+#define smpType_id_get(name) ((int) (size_t) minihash_get(&smpType_ids, name).core)
 
 /* Returns TRUE if the type of obj is equal to str.
  */
@@ -162,6 +162,11 @@ Object obj_eq(Object obj1, Object obj2);
 Object obj_types_equalp(Object obj1, Object obj2);
 
 Object smpObject_clear(Object obj, int argc, Object argv[]);
+
+/* Compares two objects just like cmp(). Designed to be fast for common 
+ * values (e.g. integers).
+ */
+int smpObject_cmp_fast(Object *err, Object obj, Object arg);
 
 /* 
  * Conses two elements together. If the cdr element is a List, the return type 

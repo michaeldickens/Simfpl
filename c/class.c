@@ -13,7 +13,6 @@ int smp_putclass(SmpType type)
 	wrapper.core = smp_malloc(sizeof(SmpType));
 	
 	obj_core(SmpType, wrapper) = type;
-	gc_stack_push(&wrapper);
 	scope_add(type.name, wrapper);
 	
 	return 0;

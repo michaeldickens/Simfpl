@@ -25,6 +25,8 @@
 (defun init-macros ()
   (make-macro (make-smp-symbol ".") (make-smp-symbol (list "obj" "f" "args")) 
 	      (make-smp-symbol `(("," "obj") ("," "f") ("@" "args"))))
+  ;; I think these macros are sort of pointless because you can just use 
+  ;; (at) or (drop).
   (make-macro (make-smp-symbol "caar") (make-smp-symbol `("obj"))
 	      (make-smp-symbol `((("," "obj") "car") "car")))
   (make-macro (make-smp-symbol "cadr") (make-smp-symbol `("obj"))

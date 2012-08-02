@@ -1,0 +1,16 @@
+{
+def summation(xs f) (
+  xs reduce ((x y) => (x + (Global funcall f y))) 0)
+
+# answer is 62
+println (Global summation (list 1 2 3 4 5) ((x) => (2 ** x)))
+}
+
+
+{
+def my_map(xs f) (
+  xs reduce ((x y) => (x + (Global funcall f y))) nil)
+
+# answer is (2 4 8 16 32)
+println (Global my_map (list 1 2 3 4 5) ((x) => (2 ** x)))
+}

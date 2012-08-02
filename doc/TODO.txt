@@ -1,31 +1,41 @@
 ***TODO***
 
 Compiler
- * I changed smp-symbol-to-string so if it receives a string, it doesn't call (write-to-string) on it. This may have introduced bugs.
- * Get floats to work.
- * Compile numbers to gmp_set_str() instead of using native numbers.
- * In (smp-compile), don't just print out the result. Instead, read in main.ll and append the result to it.
+ * Change numbers so they never get converted to Lisp numbers. Otherwise, floats may lose precision.
+ * Change lambdas so that they are always Global functions.
+ * Case statements.
+ * When the C library compiles, it writes a file containing all the classes and functions. These are then read in by the Lisp compiler.
  * Write the rest of the keyword macros.
  * Special syntax: %s, %r, etc.
+ * Write an optimizer.
 
 
 Simfpl Library
+ * Refactor String so that a string can contain any ASCII character (including \0).
  * Add more functions.
     - Integer: (all GMP number-theoretic functions)
-    - Array/List: at, concat[!], delete[!], delete_at[!], delete_if[!], drop[!], drop_while[!], each, each_index, index, filter[!], first, flatten[!], flatmap[!], hash, insert[!], join, last, map!, reverse[!], sort[!], take[!], take_while[!], to_a, to_list, uniq[!], zip
+    - Array/List: +, at, concat[!], delete[!], delete_at[!], delete_if[!], drop[!], drop_while[!], each, each_index, index, filter[!], first, flatten[!], flatmap[!], hash, insert[!], join, last, map!, reverse[!], sort[!], take[!], take_while[!], to_a, uniq[!], zip
  * Add classes: Range, Rational
+ * Write a Comparator class that defines comparison functions given a cmp() function, like in Ruby.
  * Make global variables of objects containing all of the classes.
+
+
+General
+ * Change absolute filepaths to relative filepaths that work on any system.
+ * Make a makefile that has a fast option and a fully-optimized O3 option. Remember to compile main.c with O3.
 
 See individual files (search "TODO") for more.
 
 
 
 ***BUGS***
- * A lambda inside a function cannot access the function's variables.
- * There is no way to differentiate between leaving off an optional argument and passing nil as the value for an optional argument.
+ * The program does not infer class for a call to a user-defined function.
  * Because of the way (check-for-return-form) works, if Simfpl calls return(), it will return all the way up the call stack. It should return all the way up the call stack for an exception, but for a return() call, it should catch it in the first function.
  * If a Simfpl keyword has too many arguments, it causes Lisp to fail ("odd number of &KEY arguments").
- * In object-table.lisp, functions in self and Global must be declared, but not any others (I don't think, anyway).
+ * In object-table.lisp, functions in self and Global must be declared, but not any others (I don't think so, anyway).
+ * smpType_id_eq() cannot test if an object is a subclass. This may cause problems in some places where it's used.
+ * It should be impossible to subclass Nil.
+ * In sexpgen.lisp, (declare-functions) uses *current-class*, which doesn't get set properly until after (declare-functions) is done running.
 
 
 More bugs in c/README.txt

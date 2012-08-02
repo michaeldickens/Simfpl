@@ -102,9 +102,9 @@ The @ symbol may be used to expand a list inside a quoted portion.
 
 ***Arrays and Indexing***
 
-An array is defined by square brackets surrounding comma-separated elements, as in C: 
+An array is defined by square brackets surrounding comma-separated elements, preceded by %a: 
 
-	a = [ 1, 2, 3, 4 ]
+	a = %a[ 1, 2, 3, 4 ]
 
 This compiles to (array 1 2 3 4). [...] is equivalent to %a[...].
 

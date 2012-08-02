@@ -13,13 +13,14 @@ int smpstrcreate_class()
 	smpType_def(strclass, SCOPE_INSTANCE_DATA, "+", smpFunction_init(&smpString_add, 2, "String", "String"));
 	smpType_def(strclass, SCOPE_INSTANCE_DATA | SCOPE_INTERNAL, "clear", smpFunction_init(&smpString_clear, 1, "Nil"));
 	smpType_def(strclass, SCOPE_INSTANCE_DATA, "equal?", smpFunction_init(&smpString_equalp, 2, "Bool", "Object"));
+	smpType_def(strclass, SCOPE_INSTANCE_DATA, "length", smpFunction_init(&smpString_length, 1, "Integer"));
 	smpType_def(strclass, SCOPE_INSTANCE_DATA, "reverse", smpFunction_init(&smpString_reverse, 1, "String"));
 	smpType_def(strclass, SCOPE_INSTANCE_DATA, "to_s", smpFunction_init(&smpString_to_s, 1, "String"));
 	smpType_def(strclass, SCOPE_INSTANCE_DATA, "write", smpFunction_init(&smpString_write, 1, "String"));
 	return 0;
 }
 
-int obj_init_str(Object *obj, char *str)
+int obj_init_str(Object *obj, const char *str)
 {
 	obj->core = smp_malloc(sizeof(SmpString));
 
@@ -40,8 +41,8 @@ Object smpString_add(Object obj, int argc, Object argv[])
 		
 		size_t length = str1.length + str2.length;
 		char *str = smp_malloc(length + 1);
-		strcpy(str, str1.s);
-		strcpy(str + str1.length, str2.s);
+		memcpy(str, str1.s, sizeof(char) * str1.length);
+		memcpy(str + str1.length, str2.s, sizeof(char) * str2.length);
 		
 		return smpString_init_ref(&str);
 		
@@ -58,7 +59,7 @@ Object smpString_add_now(Object obj, int argc, Object argv[])
 		
 		size_t length = core->length + str2.length;
 		core->s = smp_realloc(core->s, length + 1);
-		strcpy(core->s + core->length, str2.s);
+		memcpy(core->s + core->length, str2.s, sizeof(char) * str2.length);
 		core->length = length;
 		
 		return obj;
@@ -86,7 +87,7 @@ int smpString_equalp_cstr(Object obj, char *str)
 	return streq(smpString_to_cstr(obj), str);
 }
 
-Object smpString_init(char *str)
+Object smpString_init(const char *str)
 {
 	Object res = obj_init(&smpType_string);
 	obj_init_str(&res, str);
@@ -136,6 +137,11 @@ Object smpString_init_fmt(char *format, ...)
 	return smpString_init_ref(&str);
 }
 
+Object smpString_length(Object obj, int argc, Object argv[])
+{
+	return smpInteger_init_clong(obj_core(SmpString, obj).length);
+}
+
 Object smpString_reverse(Object obj, int argc, Object argv[])
 {
 	char *str = smpString_to_cstr(obj);
@@ -152,7 +158,7 @@ Object smpString_reverse(Object obj, int argc, Object argv[])
 	return res;
 }
 
-Object smpstrsubstring(Object obj, int start, int length)
+Object smpString_substring(Object obj, int start, int length)
 {
 	char *str = smpString_to_cstr(obj);
 	if (start + length > strlen(str))

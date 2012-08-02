@@ -9,61 +9,87 @@
 
 ;;; Finds curly braces and newlines and compiles them into parentheses.
 ;;;
-;;; inside-braces-stack: A stack indicating whether each level of depth is 
-;;;   inside curly braces.
-(defun precompile-braces (tokens &optional (inside-braces-stack nil))
+;;; bracket-type-stack: A stack indicating the type of bracket at each level 
+;;;   of depth. 'paren = parentheses, 'bracket = square brackets, 
+;;;   'brace = curly braces.
+(defun precompile-brackets (tokens &optional (bracket-type-stack nil))
   (if (null tokens)
-    (return-from precompile-braces nil))
+    (return-from precompile-brackets nil))
 
   (if (typep (car tokens) 'smp-symbol)
     (cond
+      ((symbol= (car tokens) "(")
+        (cons (car tokens) (precompile-brackets (cdr tokens) 
+			     (cons 'paren bracket-type-stack))))
+      ((symbol= (car tokens) ")")
+        (if (eq (car bracket-type-stack) 'paren)
+	  (cons (car tokens) (precompile-brackets (cdr tokens)
+						(cdr bracket-type-stack)))
+	  (error 'mismatched-brackets-error :message 
+		 "unmatched close parenthesis")))
+      ((symbol= (car tokens) "[")
+        (append (make-smp-symbol `("at" "(" "("))
+		(precompile-brackets (cdr tokens) 
+				     (cons 'bracket bracket-type-stack))))
+      ((symbol= (car tokens) "]")
+        (if (eq (car bracket-type-stack) 'bracket)
+	  (append (make-smp-symbol `(")" ")")) 
+		  (precompile-brackets (cdr tokens) 
+				       (cdr bracket-type-stack)))
+	  (error 'mismatched-brackets-error :message 
+		 "unmatched close square bracket")))
+      ((and (symbol= (car tokens) ",")
+	    (eq (car bracket-type-stack) 'bracket))
+        (append (make-smp-symbol `(")" "("))
+		(precompile-brackets (cdr tokens) bracket-type-stack)))
+      ((and (symbol= (car tokens) "%a")
+	    (symbol= (cadr tokens) "["))
+        (append (make-smp-symbol `("(" "Global" "array" "("))
+		(precompile-brackets (cddr tokens) 
+				     (cons 'bracket bracket-type-stack))))
+      ((and (symbol= (car tokens) "%l")
+	    (symbol= (cadr tokens) "["))
+        (append (make-smp-symbol `("(" "Global" "list" "("))
+		(precompile-brackets (cddr tokens) 
+				     (cons 'bracket bracket-type-stack))))
       ((symbol= (car tokens) "{")
         (append (make-smp-symbol `("(" "(")) 
-	  (precompile-braces 
+	  (precompile-brackets 
 	    ;; If a newline follows the open brace, remove it.
 	    (if (and (typep (cadr tokens) 'smp-symbol)
 		     (symbol= (cadr tokens) *newline*) )
 	      (cddr tokens)
 	      (cdr tokens))
-	    (cons t inside-braces-stack))))
-      ((symbol= (car tokens) "(")
-        (cons (car tokens) (precompile-braces (cdr tokens) 
-			     (cons nil inside-braces-stack))))
-      ((symbol= (car tokens) "}")
-        (if (car inside-braces-stack)
-          (append (make-smp-symbol `(")" ")")) (precompile-braces (cdr tokens)
-	   			        (cdr inside-braces-stack)))
-	  (error 'mismatched-parentheses-error :message 
-		 "unmatched close curly brace")))
-      ((symbol= (car tokens) ")")
-        (if (not (car inside-braces-stack))
-	  (cons (car tokens) (precompile-braces (cdr tokens)
-						(cdr inside-braces-stack)))
-	  (error 'mismatched-parentheses-error :message 
-		 "unmatched close parenthesis")))
+	    (cons 'brace bracket-type-stack))))
       ((symbol= (car tokens) *newline*)
-        (if (car inside-braces-stack)
+        (if (eq (car bracket-type-stack) 'brace)
 	  ;; If the newline is followed by a close brace, remove the newline.
 	  (if (and (typep (cadr tokens) 'smp-symbol)
 		   (symbol= (cadr tokens) "}"))
-	    (precompile-braces (cdr tokens) inside-braces-stack)
+	    (precompile-brackets (cdr tokens) bracket-type-stack)
   	    (append (make-smp-symbol `(")" ";" "("))
-		  (precompile-braces (cdr tokens) inside-braces-stack)))
-	  (precompile-braces (cdr tokens) inside-braces-stack)))
+		    (precompile-brackets (cdr tokens) bracket-type-stack)))
+	  (precompile-brackets (cdr tokens) bracket-type-stack)))
+      ((symbol= (car tokens) "}")
+        (if (eq (car bracket-type-stack) 'brace)
+          (append (make-smp-symbol `(")" ")")) 
+		  (precompile-brackets (cdr tokens) (cdr bracket-type-stack)))
+	  (error 'mismatched-brackets-error :message 
+		 "unmatched close curly brace")))
       (t 
-        (cons (car tokens) (precompile-braces (cdr tokens) 
-					      inside-braces-stack))))
-      (cons (car tokens) (precompile-braces (cdr tokens) 
-					    inside-braces-stack))))
+        (cons (car tokens) (precompile-brackets (cdr tokens) 
+					      bracket-type-stack))))
+      (cons (car tokens) (precompile-brackets (cdr tokens) 
+					    bracket-type-stack))))
 		  
 
 ;;; Moves through the token list, converting anything between parenthesis 
 ;;; tokens into an actual list.
 (defun add-depth (tokens)
-  (car (add-depth-rec tokens 0 0 nil)))
+  (car (add-depth-rec tokens 0 0)))
 
 (defmacro add-depth-repeated-code (new-car)
-  `(let ((pair (add-depth-rec (cdr tokens) depth (+ count 1) inside-bracesp)))
+  `(let ((pair (add-depth-rec (cdr tokens) depth (+ count 1))))
     (cons (cons ,new-car (car pair)) (cdr pair))))
 
 ;;; Keeps track of depth to determine whether an open or close parenthesis is 
@@ -72,33 +98,27 @@
 ;;; 
 ;;; return: A cons cell where the car is the current depth-added list and the 
 ;;;   cdr is the token count.
-(defun add-depth-rec (tokens depth count inside-bracesp)
+(defun add-depth-rec (tokens depth count)
   (if (null tokens)
     (if (= depth 0) (cons nil count)
-      (error 'mismatched-parentheses-error :message 
-          (if inside-bracesp
-            "unmatched open curly brace"
-	    "unmatched open parenthesis")))
+      (error 'mismatched-brackets-error :message 
+	     "unmatched open parenthesis"))
     (if (typep (car tokens) 'smp-symbol)
       (cond
         ((or (symbol= (car tokens) "(") (symbol= (car tokens) "{"))
-          (let ((inner-pair (add-depth-rec (cdr tokens) (+ depth 1) 0 
-					   (symbol= (car tokens) "{"))))
-	        (let ((pair
-              (add-depth-rec (nthcdr (+ 1 (cdr inner-pair))
-				            (cdr tokens)) depth 
-					           (+ count (cdr inner-pair) 2)
-						          (symbol= (car tokens) "{"))))
-		        (cons (cons (car inner-pair) (car pair)) (cdr pair)))))
+          (let ((inner-pair (add-depth-rec (cdr tokens) (+ depth 1) 0)))
+	    (let ((pair
+                (add-depth-rec (nthcdr (+ 1 (cdr inner-pair))
+		  		       (cdr tokens)) depth 
+			       (+ count (cdr inner-pair) 2))))
+	      (cons (cons (car inner-pair) (car pair)) (cdr pair)))))
 	((or (symbol= (car tokens) ")") (symbol= (car tokens) "}"))
 	   (if (= depth 0)
-            (error 'mismatched-parentheses-error :message
-		              "unmatched close parenthesis")
+            (error 'mismatched-brackets-error :message
+		   "unmatched close parenthesis")
             (cons nil count)))
 	((symbol= (car tokens) *newline*)
-	   (if inside-bracesp
-             (add-depth-repeated-code (make-smp-symbol ";"))
-             (add-depth-rec (cdr tokens) depth (+ count 1) nil)))
+             (add-depth-rec (cdr tokens) depth (+ count 1)))
         (t (add-depth-repeated-code (car tokens))))
       (add-depth-repeated-code (car tokens)))))
 
@@ -112,7 +132,8 @@
   (if (or (not (listp tokens)) (null tokens))
     (return-from infer-class tokens))
   (setf tokens (mapcar #'infer-class tokens))
-  (if (typep (car tokens) 'smp-symbol)
+  (if (and (typep (car tokens) 'smp-symbol)
+	   (not (eq (char (smp-symbol-to-string (car tokens)) 0) #\$)))
     (let ((klass (find-class-for-fun (car tokens))))
       (if klass
         (cons (make-smp-symbol klass) tokens)
@@ -172,19 +193,13 @@
 	(next-prec nil)
 	(res nil))
 
+    (setf current-fun (cadr current-pair))
+
     (when (and 
-	    (not (symbol= (cadr current-pair) "def"))
-	    (not (symbol= (cadr current-pair) "=>")))
+	    (not (symbol= current-fun "def"))
+	    (not (symbol= current-fun "=>")))
       (setf tokens (mapcar #'add-depth-by-prec-inner tokens))
       (setf current-pair (tokens-until-next-fun tokens)))
-
-    (setf next-pair (tokens-until-next-fun (cddr current-pair)))
-    (setf current-fun (cadr current-pair))
-    (setf next-fun (cadr next-pair))
-    (if (null next-fun)
-      (return-from add-depth-by-prec-inner (list tokens)))
-    (setf current-prec (get-prec current-fun))
-    (setf next-prec (get-prec next-fun))
 
     ;; Find the argument specifier and add the variables to scope.
     (if (or (symbol= current-fun "def") (symbol= current-fun "=>"))
@@ -192,9 +207,9 @@
 	    (argspec (cadddr current-pair))
 	    (inner nil))
 
-	(if (symbol= current-fun "def")
+        (if (symbol= current-fun "def")
 	  (setf argspec (caddr (cdr current-pair)))
-	  (setf argspec (cadr  (cdr current-pair))))
+	  (setf argspec (car current-pair)))
 
 	(scope-push)
 	(mapcar #'(lambda (x) 
@@ -203,29 +218,45 @@
 		         (if (typep (car x) 'smp-symbol)
 			   (scope-add x)
 			   (error 'invalid-argspec-error :message 
-			       (smp-symbol-to-string (car (last (
-			         car current-pair)))))))
+				  (write-to-string argspec))))
 		      ((typep x 'smp-symbol)
 		         (let ((xstr (smp-symbol-to-string x)))
   		           (if (eq (char xstr 0) #\&)
 			     (error 'invalid-argspec-error :message 
-			         (car (last (car current-pair))))
+			         (write-to-string argspec))
 			     (scope-add x))))
 		      (t
 		         (error 'invalid-argspec-error :message 
-			     (car (last (car current-pair)))))))
-		(let ((argspec 
-		       (remove-extra-parens (caddr (cdr current-pair)))))
+			     (write-to-string argspec)))))
+		(let ((argspec (remove-extra-parens argspec)))
 		  (if (listp argspec)
 		    argspec
 		    (list argspec))))
 
-	(setf inner (add-depth-by-prec-inner (cadddr (cdr current-pair))))
+	(setf res 
+	  (if (symbol= current-fun "def")
+	    (append (car current-pair)
+	      (list (cadr current-pair) 
+		    (caddr current-pair) (cadddr current-pair)
+		    (add-depth-by-prec-inner (cadddr (cdr current-pair)))))
+	    (append (car current-pair)
+	      (list (cadr current-pair) 
+		    (add-depth-by-prec-inner (cddr current-pair))))))
+
+	;; WARNING: This has to happen after any recursive calls to 
+	;; add-depth-by-prec-inner, or else the scope will be cleared 
+	;; prematurely.
 	(scope-pop)
-        (return-from add-depth-by-prec-inner 
-          (list (caar current-pair) (cadr current-pair) (caddr current-pair) 
-		(cadddr current-pair)
-		inner))))
+
+	(return-from add-depth-by-prec-inner res)))
+
+    (setf next-pair (tokens-until-next-fun (cddr current-pair)))
+    (setf current-fun (cadr current-pair))
+    (setf next-fun (cadr next-pair))
+    (if (null next-fun)
+      (return-from add-depth-by-prec-inner (list tokens)))
+    (setf current-prec (get-prec current-fun))
+    (setf next-prec (get-prec next-fun))
 
     (setf res 
       (if (or
@@ -256,4 +287,4 @@
 (defun sexpgen (tokens)
   (remove-extra-parens (add-depth-by-prec (infer-class 
     (expand-macros (precompile-quote-forms (add-depth 
-      (precompile-braces tokens))))))))
+      (precompile-brackets tokens))))))))

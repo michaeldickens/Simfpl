@@ -83,7 +83,7 @@ int test_gc()
 	scope_add("x", x);
 	
 	int i;
-	for (i = 0; i < 100; i++)
+	for (i = 0; ; i++)
 		smp_println(smpObject_funcall(x, "^", 1, &smp_nil));
 	
 	return 0;
@@ -95,7 +95,7 @@ int test_strings()
 	
 	Object world = smpString_init("World");
 	Object worlds[] = { world, world, world, world };
-	Object str = smpGlobal_sprintf("Hello, %w! Mad %s, Wayne's %s, Disney %s.", 4, worlds);
+	Object str = smpGlobal_sprintf("Hello, %s! Mad %w, Wayne's %w, Disney %w.", 4, worlds);
 	successp &= smp_assert_eq(smpString_init("Hello, World! Mad \"World\", Wayne's \"World\", Disney \"World\"."), str);
 	obj_clear(&world);
 		
@@ -139,9 +139,10 @@ int test_lists()
 
 Object make_list(Object obj, int argc, Object argv[])
 {
-	if (smpInteger_cmp_cint(obj, 1, &smpInteger_zero) > 0) {
-		Object dec = smpInteger_dec(obj);
-		Object num = smpInteger_inc(argv[0]);
+	Object err;
+	if (smpInteger_cmp_cint(&err, obj, smpInteger_zero) > 0) {
+		Object dec = smpInteger_dec(obj, 0, NULL);
+		Object num = smpInteger_inc(argv[0], 0, NULL);
 		
 		Object car = argv[0];
 		Object cdr = smpObject_funcall(dec, "make_list", 1, &num);
@@ -200,11 +201,9 @@ int test_bool()
 
 int test_regex()
 {
-	gc_add_objectsp = FALSE;
 	Object pattern = smpString_init("^[0123456789]+$");
 	Object string = smpString_init("09821409");
 	smp_println(smpRegex_matchp(pattern, 1, &string));
-	gc_add_objectsp = TRUE;
 	
 	return 0;
 }
@@ -224,9 +223,103 @@ int test_arrays()
 	return 0;
 }
 
+/*
+ * Timing Data
+ * 
+ * max_cint = 96, 512 total rounds, double max_cint every 64 rounds
+ * 
+ * With a random array, 
+ *   merge/insertion: 4.65
+ *   timmy: 4.76
+ * 
+ * Where each element has a 95% chance of being greater than the previous, 
+ *   merge/insertion: 3.43
+ *   timmy: 3.43
+ * 
+ * 99% chance, 
+ *   merge/insertion: 3.25
+ *   timmy: 3.08
+ * 
+ * Where each element has a 99% chance of being less than the previous, 
+ *   merge/insertion: 3.65
+ *   timmy: 3.09
+ * 
+ * 
+ */
+int test_array_sort()
+{
+	struct timeval tv;
+	gettimeofday(&tv, NULL);
+	double start = tv.tv_sec + tv.tv_usec / 1000000.0;
+
+	size_t i, j;
+	long max_cint = 96;
+	for (i = 0; i < 512; ++i) {
+		if (i > 0 && i % 64 == 0)
+			max_cint *= 2;
+	
+		Object elem = smpInteger_init_clong(0);
+		Object array = smpArray_init();
+		Object max = smpInteger_init_clong(max_cint);
+		int i;
+		for (i = 0; i < max_cint; ++i) {
+			if (genrand_real2() < 9.0) {
+				elem = smpInteger_add(elem, 1, &smpInteger_one);
+			} else {
+				elem = smpGlobal_rand(smp_global, 1, &max);
+			}
+			smpArray_add_now(array, 1, &elem);
+		}
+		
+		smpArray_sort_now(array, 0, NULL);
+	}
+	
+	gettimeofday(&tv, NULL);
+	double finish = tv.tv_sec + tv.tv_usec / 1000000.0;
+	printf("time to sort at %f seconds\n", finish - start);
+}
+
+int list_clear_all(Object list)
+{
+	SmpList core = obj_core(SmpList, list);
+	obj_clear(&core.car);
+	if (core.cdr)
+		list_clear_all(*core.cdr);
+	obj_clear(&list);
+}
+
+int test_list_sort()
+{
+	struct timeval tv;
+	gettimeofday(&tv, NULL);
+	double start = tv.tv_sec + tv.tv_usec / 1000000.0;
+
+	size_t i, j;
+	long max_cint = 2;
+	for (i = 0; i < 512; ++i) {
+		if (i > 0 && i % 64 == 0)
+			max_cint *= 2;
+	
+		Object elem = smpInteger_init_clong(0);
+		Object list = smp_nil;
+		Object max = smpInteger_init_clong(max_cint);
+		int i;
+		for (i = 0; i < max_cint; ++i) {
+			elem = smpGlobal_rand(smp_global, 1, &max);
+			list = smpObject_cons(elem, 1, &list);
+		}
+		
+		list = smpList_nsort(list, 0, NULL);
+		list_clear_all(list);
+	}
+	
+	gettimeofday(&tv, NULL);
+	double finish = tv.tv_sec + tv.tv_usec / 1000000.0;
+	printf("time to sort at %f seconds\n", finish - start);
+}
+
 int test_hash()
 {
-	gc_add_objectsp = FALSE;
 	Object hash = smpHash_init();
 	Object key = smpString_init("What is Pi?");
 	Object key2 = smpString_init("second pi");
@@ -239,10 +332,9 @@ int test_hash()
 	
 	smp_println(hash);
 	
-	Object get = smpHash_get(hash, 1, &key);
+	Object get = smpHash_at(hash, 1, &key);
 	smp_printf("pi: %s\n", 1, &get);
 	
-	gc_add_objectsp = TRUE;
 	return 0;
 }
 
@@ -255,27 +347,25 @@ int test_external_classes()
 
 int test_object_speed()
 {
-	gc_add_objectsp = FALSE;
 	speedtest_fun(smpInteger_init_clong(20000), 0, NULL);
-	gc_add_objectsp = TRUE;
 	return 0;
 }
 
 Object speedtest_fun(Object obj, int argc, Object argv[])
 {
-	Object num, square;
+	Object num, square, err;
 	if (argc == 1) num = argv[0];
 	else num = smpInteger_init_clong(0);
 	square = smpInteger_mul(num, 1, &num);
 	
 	Object max = obj;
-	if (smpInteger_ge_cint(num, 1, &max))
+	if (smpInteger_ge_cint(&err, num, max))
 		return smp_nil;
 	
 	Object chain2 = smpObject_cons(num, 1, &smp_nil);
 	Object chain = smpObject_cons(square, 1, &chain2);
 	
-	Object inc = smpInteger_inc(num);
+	Object inc = smpInteger_inc(num, 0, NULL);
 	Object tmp = speedtest_fun(obj, 1, &inc);
 	Object res = smpObject_cons(chain, 1, &tmp);
 	return res;

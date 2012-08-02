@@ -34,14 +34,15 @@ int smpException_create_class()
 Object smpException_backtrace_add_now(Object exc, Object obj, Object fun)
 {
 	Object pair = smpObject_cons(obj, 1, &fun);
+	Object *bt;
 	
 	if (smpType_name_eq(exc, "TypeError")) {
-		Object *bt = &obj_core(SmpTypeExc, exc).backtrace;
-		*bt = smpObject_cons(pair, 1, bt);
+		bt = &obj_core(SmpTypeExc, exc).backtrace;
 	} else {
-		Object *bt = &obj_core(SmpExc, exc).backtrace;
-		*bt = smpObject_cons(pair, 1, bt);
+		bt = &obj_core(SmpExc, exc).backtrace;
 	}
+
+	*bt = smpList_append_now(*bt, 1, &pair);
 	
 	return smp_nil;
 }
@@ -64,6 +65,12 @@ Object smpException_init(Object type)
 	res.message = NULL;
 	res.backtrace = smp_nil;
 	
+	if (!smpObject_instancep_cstr(type.type, "Class")) {
+		internal_error("In smpException_init(), wrong object type (Class expected, %s found).", 
+			type.type->name);
+		return smp_nil;
+	}
+	
 	Object wrapper = obj_init(&obj_core(SmpType, type));
 	wrapper.core = smp_malloc(sizeof(SmpExc));
 	obj_core(SmpExc, wrapper) = res;
@@ -73,17 +80,6 @@ Object smpException_init(Object type)
 
 Object smpException_init_fmt(Object type, const char *fmt, ...)
 {
-	/* If the garbage collector is running, a new Exception cannot be allocated.
-	 */
-	if (gc_runningp) {
-		va_list ap;
-		va_start(ap, fmt);
-		vfprintf(stderr, fmt, ap);
-		fprintf(stderr, "\n");
-		va_end(ap);
-		return smp_nil;
-	}
-	
 	Object res = smpException_init(type);
 	va_list ap;
 	va_start(ap, fmt);
@@ -157,15 +153,6 @@ Object smpTypeError_init(SmpType *expected, Object found)
 Object smpTypeError_init_detailed(SmpType *expected, Object found, 
 		const char *fmt, ...)
 {
-	if (gc_runningp) {
-		va_list ap;
-		va_start(ap, fmt);
-		vfprintf(stderr, fmt, ap);
-		fprintf(stderr, "\n");
-		va_end(ap);
-		return smp_nil;
-	}
-		
 	SmpTypeExc res;
 	res.message = NULL;
 	res.backtrace = smp_nil;
@@ -186,15 +173,6 @@ Object smpTypeError_init_detailed(SmpType *expected, Object found,
 
 Object smpTypeError_init_fmt(const char *fmt, ...)
 {
-	if (gc_runningp) {
-		va_list ap;
-		va_start(ap, fmt);
-		vfprintf(stderr, fmt, ap);
-		fprintf(stderr, "\n");
-		va_end(ap);
-		return smp_nil;
-	}
-	
 	SmpTypeExc res;
 	
 	va_list ap;
@@ -233,19 +211,18 @@ Object smpTypeError_to_s(Object obj, int argc, Object argv[])
 	if (smpType_id_eq(core.backtrace, smpType_id_nil))
 		return res;
 	
-	DISABLE_GC_ACTIVEP;
 	
-	Object newline = smpString_init("");
-	smpString_add_now(res, 1, &newline);
+	Object newline = smpString_init("\n");
+	res = smpString_add_now(res, 1, &newline);
+	check_for_thrown(res, NULL);
 	obj_clear(&newline);
 	
 	Object separator = smpString_init_fmt("\n\tfrom ");
 	Object str = smpObject_funcall(core.backtrace, "to_s", 1, &separator);
-	check_for_thrown(str, ENABLE_GC_ACTIVEP);
-	Object code = smpString_add_now(res, 1, &str);
-	check_for_thrown(code, ENABLE_GC_ACTIVEP);
+	check_for_thrown(str, NULL);
+	res = smpString_add_now(res, 1, &str);
+	check_for_thrown(res, NULL);
 	
-	ENABLE_GC_ACTIVEP;
 	return res;
 }
 

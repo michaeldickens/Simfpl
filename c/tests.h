@@ -34,6 +34,9 @@ int test_arrays();
 int test_hash();
 int test_external_classes();
 
+int test_array_sort();
+int test_list_sort();
+
 int test_object_speed();
 Object speedtest_fun(Object obj, int argc, Object argv[]);
 
