@@ -1,0 +1,1 @@
+clang -cc1 ../c/main.c -emit-llvm && gcc ../c/main.c -O3 -S
