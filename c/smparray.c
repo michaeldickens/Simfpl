@@ -16,7 +16,6 @@ int smpArray_create_class()
 	smpType_def(array, SCOPE_INSTANCE_DATA, "at=", smpFunction_init(&smpArray_at_assign, 3, "Object", "Integer", "Object"));
 	smpType_def(array, SCOPE_INSTANCE_DATA, "clear", smpFunction_init(&smpArray_clear, 1, "Nil"));
 	smpType_def(array, SCOPE_INSTANCE_DATA, "copy", smpFunction_init(&smpArray_copy, 1, "Array"));
-	smpType_def(array, SCOPE_INSTANCE_DATA, "gc_mark", smpFunction_init(&smpArray_gc_mark, 1, "Nil"));
 	smpType_def(array, SCOPE_INSTANCE_DATA, "map", smpFunction_init(&smpArray_map, 2, "Array", "Function"));
 	smpType_def(array, SCOPE_INSTANCE_DATA, "reduce", smpFunction_init(&smpArray_reduce, 4, "Array", "Function", "&optional", "Object"));
 	smpType_def(array, SCOPE_INSTANCE_DATA, "reverse", smpFunction_init(&smpArray_reverse, 1, "Array"));
@@ -127,15 +126,6 @@ Object smpArray_init_array(Object *arr, size_t length)
 	obj_core(SmpArray, res) = core;
 	
 	return res;
-}
-
-Object smpArray_gc_mark(Object obj, int argc, Object argv[])
-{
-	Object *a = obj_core(SmpArray, obj).a;
-	size_t i, length = obj_core(SmpArray, obj).length;
-	for (i = 0; i < length; ++i)
-		gc_mark_recursive(NULL, a[i]);
-	return smp_nil;
 }
 
 Object smpArray_get_c(Object obj, size_t index)

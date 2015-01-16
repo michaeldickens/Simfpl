@@ -1,0 +1,8 @@
+# Function test
+(def f (x) (x + 3)) ; (println (f 2))
+
+
+# Recursion test
+(def factorial(n) (
+	if (n == 0) 1 (n * (factorial (n - 1))))); 
+	(println (Global factorial 10))

@@ -69,13 +69,13 @@ int minihash_fullclear(MiniHash *hash)
 	return 0;
 }
 
-int minihash_function(char *key)
+int minihash_function(const char *key)
 {
 	int hash = 5381;
 	
 	--key;
 	while (*(++key))
-		hash = ((hash << 5) + hash) + *key;
+		hash = ((hash << 5) + hash) ^ *key;
 	return hash;
 }
 
@@ -142,7 +142,7 @@ int miniarray_push(MiniArray *arr, MiniPair pair)
 	return 0;
 }
 
-Object minihash_get(MiniHash *hash, char *key)
+Object minihash_get(MiniHash *hash, const char *key)
 {
 	if (!hash || !hash->a)
 		return smp_nil;
@@ -159,7 +159,7 @@ Object minihash_get(MiniHash *hash, char *key)
 	return smp_nil;
 }
 
-int minihash_containsp(MiniHash *hash, char *key)
+int minihash_containsp(MiniHash *hash, const char *key)
 {
 	if (!hash || !hash->a)
 		return FALSE;

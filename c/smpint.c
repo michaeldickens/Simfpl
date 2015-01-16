@@ -20,7 +20,6 @@ int smpInteger_create_class()
 	smpType_id_int = smpType_id_get("Integer");
 	
 	smpType_def(intclass, SCOPE_INSTANCE_DATA | SCOPE_INTERNAL, "clear", smpFunction_init(&smpInteger_clear, 1, "Nil"));
-//	smpType_def(intclass, SCOPE_INSTANCE_DATA | SCOPE_INTERNAL, "gc_mark", smpFunction_init(&smpInteger_gc_mark));
 	smpType_def(intclass, SCOPE_INSTANCE_DATA, "+", smpFunction_init(&smpInteger_add, 2, "Number", "Number"));
 	smpType_def(intclass, SCOPE_INSTANCE_DATA, "-", smpFunction_init(&smpInteger_sub, 2, "Number", "Number"));
 	smpType_def(intclass, SCOPE_INSTANCE_DATA, "*", smpFunction_init(&smpInteger_mul, 2, "Number", "Number"));

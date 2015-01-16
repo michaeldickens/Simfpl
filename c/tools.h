@@ -46,13 +46,6 @@ struct membatch_stack {
 #define smp_realloc(mem, bytes) GC_realloc((mem), (bytes))
 #define smp_free(mem) GC_free(mem)
 
-/* Used as a placeholder in case the garbage collector is ever implemented 
- * again. Currently does nothing.
- */
-int gc_mark_recursive(char *key, struct obj_struct obj);
-
-#define GC_MARK_OBJECT(obj) /* intentionally left blank */
-
 void * smp_malloc_fun(size_t bytes);
 void * smp_realloc_size(void *mem, size_t old_bytes, size_t new_bytes);
 void smp_free_size(void *mem, size_t bytes);

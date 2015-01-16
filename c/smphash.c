@@ -15,7 +15,6 @@ int smpHash_create_class()
 	smpType_def(hash, SCOPE_INSTANCE_DATA, "at", smpFunction_init(&smpHash_at, 2, "Object", "Object"));
 	smpType_def(hash, SCOPE_INSTANCE_DATA, "at=", smpFunction_init(&smpHash_at_assign, 3, "Object", "Object", "Object"));
 	smpType_def(hash, SCOPE_INSTANCE_DATA, "clear", smpFunction_init(&smpHash_clear, 1, "Nil"));
-	smpType_def(hash, SCOPE_INSTANCE_DATA, "gc_mark", smpFunction_init(&smpHash_gc_mark, 1, "Nil"));
 	smpType_def(hash, SCOPE_INSTANCE_DATA, "to_s", smpFunction_init(&smpHash_to_s, 1, "String"));
 	smpType_def(hash, SCOPE_INSTANCE_DATA, "write", smpFunction_init(&smpHash_write, 1, "String"));
 	
@@ -138,18 +137,6 @@ int smpHash_core_copy(SmpHash *res,SmpHash *hash)
 	}
 	
 	return 0;
-}
-
-Object smpHash_gc_mark(Object obj, int argc, Object argv[])
-{
-	SmpHash hash = obj_core(SmpHash, obj);
-	
-	size_t i;
-	for (i = 0; i < hash.capacity; ++i) {
-		gc_mark_recursive(NULL, hash.a[i]);
-	}
-	
-	return smp_nil;
 }
 
 Object smpHash_init()

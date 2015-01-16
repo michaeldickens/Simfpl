@@ -9,12 +9,19 @@
 
 ;;; Supports floating point, scientific notation, and negation, but not 
 ;;; any base other than 10.
-(defparameter *rematch-number* "-?\\d+(\\.\\d+)?([eE]\\d+)?")
+(defparameter *rematch-number* "-?\\d+(\\.\\d+)?([eE][+-]?\\d+)?")
 
-(defparameter *rematch-symbol* (concatenate 'string 
-    *rematch-single-char* "|[^'\"#\\s\\d" 
+(defparameter *rematch-integer* "-?\\d+")
+
+(defparameter *rematch-word* "[$]?[a-zA-Z][a-zA-Z0-9]*[?!]?")
+
+(defparameter *rematch-special-chars* (concatenate 'string 
+    "[^'\"#\\s\\w" 
         (subseq *rematch-single-char* 1 (- (length *rematch-single-char*) 1))
         "]+"))
+
+(defparameter *rematch-symbol* (concatenate 'string 
+    *rematch-single-char* "|" *rematch-word* "|" *rematch-special-chars*))
 
 ;;; Single-quoted string.
 (defparameter *rematch-single-string* "'((\\\\.)|[^'])*'")
@@ -68,7 +75,9 @@
 
 (defun string-to-token (str)
   (cond
-    ((match-whole *rematch-number* str) (read-from-string str))
+    ((match-whole *rematch-integer* str) 
+      (make-instance 'smp-integer :value str))
+    ((match-whole *rematch-number* str) (make-instance 'smp-float :value str))
     ((string= "nil" str) nil)
     ((string= "true" str) t)
     ((match-whole *rematch-symbol* str) (make-smp-symbol str))

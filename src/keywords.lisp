@@ -7,7 +7,7 @@
 
 ;;; A hash containing keywords. The key is a string that holds the value of 
 ;;; the keyword, and the value is a function that returns compiled source code.
-(defparameter *keywords* (make-hash-table :test 'equalp))
+(defparameter *keywords* (make-hash-table :test 'equal))
 
 (defun make-keyword (keyword value)
   (setf (gethash keyword *keywords*) value))
@@ -16,7 +16,6 @@
   (concatenate 'string 
     (codegen-sexp obj :indent indent)
     (codegen-sexp arg :indent indent)))
-
 
 (defun keyword-assign (name value &key (indent "")) 
   (if (and (typep name 'smp-symbol)
@@ -28,6 +27,7 @@
 	(index-instruction nil)
 	(compiled-value nil)
 	(res-instruction nil)
+	(end-part-instruction nil)
 	(var-exists (scope-exists name)))
 
     ;; This has to happen before compiled-value.
@@ -73,24 +73,28 @@
 	  "bitcast [2 x " *obj-noptr* "]* " 
 	  (instruction-to-string (- *instruction-counter* 5)) " to " 
 	  *obj-decl* *newline*
-	(progn (setf *prev-instruction* (next-instruction)) "")
-	(alloca-form *instruction-counter*)
-	indent "call void @smpObject_funcall(" *obj-decl* "sret " 
-	  (instruction-to-string *instruction-counter*) ", " *obj-decl* 
-	  "byval " (instruction-to-string collection-instruction) ", "
-	  (make-string-literal "at=") ", i32 2, " 
-	  *obj-decl* (instruction-to-string (- *instruction-counter* 1))
-	  ")" *newline*
-	(check-for-return-form *prev-instruction*)
-	(progn (dotimes (number 5) (next-instruction)) ""))
+
+
+	(progn (dotimes (number 5) (next-instruction)) "")
+	(progn (setf *prev-instruction* *instruction-counter*) "")
+	(funcall-form *instruction-counter* collection-instruction 
+		      (- *instruction-counter* 5) "at=" 2
+		      (- *instruction-counter* 6)))
 	  
       (progn
         (scope-add name)
+	(setf end-part-instruction *instruction-counter*)
+	(dotimes (number 5) (next-instruction))
         (concatenate 'string
           compiled-value
-          indent (instruction-counter-to-string) " = call i32 @scope_add(" 
-            (make-string-literal (smp-symbol-to-string name)) ", " *obj-decl* 
-	    "byval " (instruction-to-string res-instruction) ")" *newline*)))))
+	  (split-obj-struct-form end-part-instruction res-instruction)
+	  indent (instruction-counter-to-string) " = call i32 @scope_add("
+	    (make-string-literal (smp-symbol-to-string name)) 
+	    ", %struct.smpType_struct* " 
+	    (instruction-to-string (+ end-part-instruction 2)) 
+	    ", i8* " 
+	    (instruction-to-string (+ end-part-instruction 4)) ")" 
+	    *newline*)))))
 
 
 (defun keyword-class (obj name parent body) nil)
@@ -112,6 +116,7 @@
 		 1 ; SCOPE_CLASS_DATA
 		 0)) ; SCOPE_INSTANCE_DATA
 	(pure-args nil)
+	(arg-modifiers nil)
 	(saved-instruction-counter *instruction-counter*)
 	(saved-prev-instruction *prev-instruction*)
 	(compiled-body nil)
@@ -131,8 +136,12 @@
 	    (error 'invalid-argspec-error (concatenate 'string 
               "Invalid list parameter " (write-to-string x))))
 	  (if (eq (char (smp-symbol-to-string x) 0) #\&)
-	    xs
-	    (cons x xs))))
+	    (progn 
+	      (setf arg-modifiers (cons x arg-modifiers)) 
+	      xs)
+	    (progn 
+	      (setf arg-modifiers (cons nil arg-modifiers))
+	      (cons x xs)))))
       args :initial-value nil))
 
     (scope-push)
@@ -150,18 +159,33 @@
 
     (setf *instruction-counter* 0)
     (setf first-instruction (next-instruction))
-    (dotimes (number (length pure-args)) (next-instruction))
+    (dotimes (number 2) (next-instruction))
+    (setf unwrap-instruction (next-instruction))
+    (dotimes (number (- (* (length pure-args) 5) 1)) (next-instruction))
     (setf compiled-body (codegen-sexp body :indent indent))
     (setf last-instruction (next-instruction))
     (next-instruction)
-    
+
+    ;; Defines the function itself.
     (setf *llvm-functions* (concatenate 'string *llvm-functions* *newline* 
-      "define void @" (make-smp-name class-name name) "("
-        *obj-decl* "sret %agg.result, " *obj-decl* "byval %obj, i32 %argc, "
-        *obj-decl* "%argv) {" *newline*
+      "define " *obj-noptr* " @" (make-smp-name class-name name) "("
+        "%struct.smpType_struct* %obj.coerce0, i8* %obj.coerce1, "
+        " i32 %argc, " *obj-decl* "%argv) {" *newline*
 
       indent (instruction-to-string first-instruction)
         " = call i32 @scope_push()" *newline*
+
+      ;; Re-combine the split obj.
+      (alloca-form "obj")
+      indent (instruction-to-string (+ first-instruction 1)) 
+        " = getelementptr " *obj-decl* "%obj, i32 0, i32 0" *newline*
+      indent "store %struct.smpType_struct* %obj.coerce0, " 
+        "%struct.smpType_struct** " 
+	(instruction-to-string (+ first-instruction 1)) *newline*
+      indent (instruction-to-string (+ first-instruction 2)) 
+        " = getelementptr " *obj-decl* "%obj, i32 0, i32 1" *newline*
+      indent "store i8* %obj.coerce1, i8** " 
+        (instruction-to-string (+ first-instruction 2)) *newline*
 
       ;; Thanks to smpfun_call(), each argument in %argv maps to exactly one 
       ;; function parameter. This pulls them out into separate variables.
@@ -169,11 +193,15 @@
 	  (getelementptr-form (make-smp-name class-name (nth n pure-args))
 			      "argv" 
 			      (list (- (length pure-args) (+ n 1))))
-          indent (instruction-to-string (+ first-instruction n 1)) 
+	  (split-obj-ptr-form (+ unwrap-instruction (* n 5))
+	    (make-smp-name class-name (nth n pure-args)))
+          indent (instruction-to-string (+ unwrap-instruction (* n 5) 4))
 	    " = call i32 @scope_add(" 
 	    (make-string-literal (smp-symbol-to-string (nth n pure-args))) 
-	    ", " *obj-decl* "byval %" (make-smp-name class-name 
-						     (nth n pure-args))
+	    ", %struct.smpType_struct* " 
+	    (instruction-to-string (+ unwrap-instruction (* n 5) 1)) 
+	    ", i8* " 
+	    (instruction-to-string (+ unwrap-instruction (* n 5) 3)) 
 	    ")" *newline*))
 	(reverse (reduce #'(lambda (xs x) 
 		     (if xs (cons (+ (car xs) 1) xs) (list 0)))
@@ -181,11 +209,10 @@
 	:initial-value "")
 
       compiled-body
-      (load-form last-instruction *prev-instruction*)
-      (store-form last-instruction "agg.result")
-      indent (instruction-to-string (+ last-instruction 1))
+      indent (instruction-to-string last-instruction)
         " = call i32 @scope_pop()" *newline*
-      indent "ret void" *newline*
+      indent "ret " *obj-noptr* (prev-instruction-to-string)
+        *newline*
       "}" *newline*))
 
     (setf *instruction-counter* saved-instruction-counter)
@@ -193,20 +220,22 @@
     (setf compiled-klass (codegen-sexp (make-smp-symbol (car *current-class*))
 				       :indent indent))
     (setf klass-instruction *prev-instruction*)
-    (next-instruction)
+    (setf start-instruction (next-instruction))
+    (dotimes (number 10) (next-instruction))
     (setf *prev-instruction* (next-instruction))
 
     (scope-pop)
 
+    ;; Executes the internal call to def().
     (concatenate 'string 
       compiled-klass 
-      (alloca-form (- *prev-instruction* 1))
-      (alloca-form *prev-instruction*)
-      indent "call void (" *obj-decl* ", void (" *obj-decl* ", " *obj-decl* 
-        ", i32, " *obj-decl* ")*, i32, ...)* @smpFunction_init(" *obj-decl* 
-        "sret " (instruction-to-string (- *prev-instruction* 1)) ", void (" 
-	*obj-decl* ", " *obj-decl* ", i32, " *obj-decl* ")* @" 
-	(make-smp-name class-name name) ", i32 " 
+
+      indent (instruction-to-string start-instruction) " = call " 
+        *obj-noptr* " (" *obj-noptr* " (%struct.smpType_struct*, i8*, i32, " 
+	*obj-decl* ")*, i32, ...)* "
+        "@smpFunction_init(" *obj-noptr* 
+	 " (%struct.smpType_struct*, i8*, i32, " *obj-decl* ")* " 
+	  "@" (make-smp-name class-name name) ", i32 " 
 	(write-to-string (+ (length args) 1)) ", " 
 	(reduce #'(lambda (total x) (concatenate 'string total ", "
             (if (eq (char (smp-symbol-to-string x) 0) #\&)
@@ -214,12 +243,20 @@
 	      (make-string-literal (make-smp-symbol "Object")))))
 	  args :initial-value (make-string-literal (make-smp-symbol "Object")))
 	")" *newline*
-      indent "call void @smpType_def(" *obj-decl* "sret " 
-        (prev-instruction-to-string) ", " *obj-decl* 
-	"byval " (instruction-to-string klass-instruction) ", i32 "
-	(write-to-string flags) ", "
-	(make-string-literal name) ", " *obj-decl* "byval " 
-	(instruction-to-string (- *prev-instruction* 1)) ")" *newline*)))
+
+      (split-obj-struct-form (+ start-instruction 1) klass-instruction)
+      (split-obj-struct-form (+ start-instruction 6) start-instruction)
+      indent (prev-instruction-to-string) " = call " *obj-noptr* " " 
+        "@smpType_def(" 
+	"%struct.smpType_struct* " 
+	  (instruction-to-string (+ start-instruction 3)) 
+	", i8* " (instruction-to-string (+ start-instruction 5))
+        ", i32 " (write-to-string flags) ", "
+	(make-string-literal name) ", " 
+	"%struct.smpType_struct* " 
+	  (instruction-to-string (+ start-instruction 8))
+	", i8* " (instruction-to-string (+ start-instruction 10))
+	")" *newline*)))
 
 
 (defun keyword-apply (obj name args &key (indent ""))
@@ -228,7 +265,7 @@
 		  (make-smp-symbol (subseq str 1 (length str))))
 		args :indent indent))
 
-
+;;; Deprecated. Use the "and" macro instead.
 (defun keyword-and (left right &key (indent ""))
   (let ((compiled-left nil)
 	(compiled-right nil)
@@ -285,7 +322,7 @@
       (label-form *instruction-counter*))))
 
 				      
-
+;;; Deprecated. Use the "or" macro instead.
 (defun keyword-or (left right &key (indent ""))
   (let ((compiled-left nil)
 	(compiled-right nil)
@@ -377,13 +414,11 @@
     (setf compiled-condition (codegen-sexp condition :indent indent))
     (setf condition-res-instruction *prev-instruction*)
     (setf condition-end-num (next-instruction))
-    (next-instruction)
-    (next-instruction)
+    (dotimes (number 7) (next-instruction))
     
     (setf compiled-body (codegen-sexp body :indent indent))
     (setf body-res-instruction *prev-instruction*)
     (setf body-end-num (next-instruction))
-    (next-instruction)
 
     (setf compiled-else-body (codegen-sexp else-body :indent indent))
     (setf else-res-instruction *prev-instruction*)
@@ -391,35 +426,31 @@
     (next-instruction)
 
     ;; Make sure this is done after compiling the inner sexps.
-    (setf *prev-instruction* res-num)
+    (setf *prev-instruction* *instruction-counter*)
     
     (concatenate 'string
       (alloca-form res-num)
       compiled-condition
 
-      indent (instruction-to-string condition-end-num) 
-        " = call i32 @smpObject_truep_c(" *obj-decl* "byval " 
-        (instruction-to-string condition-res-instruction) ")" *newline*
-      (icmp-form (+ condition-end-num 1) condition-end-num)
-      (br2-form (+ condition-end-num 1) (+ condition-end-num 2) 
-		(+ body-end-num 1))
+      (truep-form condition-res-instruction condition-end-num 
+		  body-end-num)
 
-      (label-form (+ condition-end-num 2))
+      (label-form (+ condition-end-num 8))
       compiled-body
-      (load-form body-end-num body-res-instruction)
-      (store-form body-end-num res-num)
-      (br1-form *instruction-counter*)
+      (store-form body-res-instruction res-num)
+      (br1-form else-end-num)
 
-      (label-form (+ body-end-num 1))
+      (label-form body-end-num)
       compiled-else-body
-      (load-form else-end-num else-res-instruction)
-      (store-form else-end-num res-num)
-      (br1-form *instruction-counter*)
+      (store-form else-res-instruction res-num)
+      (br1-form else-end-num)
 
-      (label-form *instruction-counter*))))
+      (label-form else-end-num)
+      (load-form (+ else-end-num 1) res-num))))
 
 
 (defun keyword-try (obj body &rest exceptions) nil)
+
 
 (defun keyword-while (obj condition body &key (indent ""))
   (let ((compiled-condition nil)
@@ -431,61 +462,61 @@
 	(body-end-num nil)
 
 	(condition-res-instruction nil)
-	(body-res-instruction nil))
+	(body-res-instruction nil)
+	
+	(catch-num nil)
+	(exit-loop-num nil))
 
     (setf res-num (next-instruction))
+    (next-instruction)
     (next-instruction)
 
     (setf compiled-condition (codegen-sexp condition :indent indent))
     (setf condition-res-instruction *prev-instruction*)
-    (setf condition-end-num (next-instruction))
-    (next-instruction)
-    (next-instruction)
+    (dotimes (number 8) (next-instruction))
 
     (setf compiled-body (codegen-sexp body :indent indent))
     (setf body-res-instruction *prev-instruction*)
     (setf body-end-num (next-instruction))
     (dotimes (number 6) (next-instruction))
+    (setf catch-num (next-instruction))
+    (dotimes (number 6) (next-instruction))
+    (setf exit-loop-num (next-instruction))
+    (next-instruction)
 
-    (setf *prev-instruction* res-num)
+    (setf *prev-instruction* (+ exit-loop-num 1))
 
     (concatenate 'string
       (alloca-form res-num)
-      (br1-form (+ res-num 1))
+      (load-form (+ res-num 1) "@smp_nil")
+      (store-form (+ res-num 1) res-num)
+      (br1-form (+ res-num 2))
 
-      (label-form (+ res-num 1))
+      (label-form (+ res-num 2))
       compiled-condition
       
-      indent (instruction-to-string condition-end-num)
-        " = call i32 @smpObject_truep_c(" *obj-decl* "byval "
-        (instruction-to-string condition-res-instruction) ")" *newline*
-      (icmp-form (+ condition-end-num 1) condition-end-num)
-      (br2-form (+ condition-end-num 1) (+ condition-end-num 2) 
-		(+ body-end-num 6))
+      (truep-form condition-res-instruction (+ condition-res-instruction 1)
+		  exit-loop-num)
 
-      (label-form (+ condition-end-num 2))
+      (label-form (- body-res-instruction 1))
       compiled-body
 
-      (load-form body-end-num body-res-instruction)
-      (store-form body-end-num res-num)
+      (should-breakp-form body-res-instruction body-end-num (+ res-num 2))
 
+      (label-form catch-num)
+      (alloca-form (+ catch-num 1))
+      (store-form body-res-instruction (+ catch-num 1))
+      (split-obj-ptr-form (+ catch-num 2) (+ catch-num 1))
+      indent (instruction-to-string (+ catch-num 6)) 
+        " = call %struct.obj_struct @smpThrown_get_first_value(%struct.smpType_struct* " 
+	(instruction-to-string (+ catch-num 3)) ", i8* "
+	(instruction-to-string (+ catch-num 5)) ")" *newline*
+      (store-form (+ catch-num 6) res-num)
+      (br1-form (+ catch-num 7))
 
-      indent (instruction-to-string (+ body-end-num 1))
-        " = call i32 @smp_should_breakp_c(" *obj-decl* 
-	(instruction-to-string body-res-instruction) ")" *newline*
-      (icmp-form (+ body-end-num 2) (+ body-end-num 1))
-      (br2-form (+ body-end-num 2) (+ body-end-num 3) (+ res-num 1))
-      
-      (label-form (+ body-end-num 3))
-      (alloca-form (+ body-end-num 4))
-      indent "call void @smpThrown_get_first_value(" *obj-decl* "sret " 
-        (instruction-to-string (+ body-end-num 4)) ", " 
-	*obj-decl* (instruction-to-string body-res-instruction) ")" *newline*
-      (load-form (+ body-end-num 5) (+ body-end-num 4))
-      (store-form (+ body-end-num 5) res-num)
-      (br1-form (+ body-end-num 6))
-
-      (label-form (+ body-end-num 6)))))
+      (label-form exit-loop-num)
+      (load-form (+ exit-loop-num 1) res-num)
+      )))
 
 
 (defun make-keywords ()
@@ -495,12 +526,12 @@
   (make-keyword "class" #'keyword-class)
   (make-keyword "def" #'keyword-def)
   (make-keyword "." #'keyword-apply)
-  (make-keyword "and" #'keyword-and)
-  (make-keyword "&&" #'keyword-and)
-  (make-keyword "or" #'keyword-or)
-  (make-keyword "||" #'keyword-or))
+;  (make-keyword "and" #'keyword-and)
+;  (make-keyword "&&" #'keyword-and)
+;  (make-keyword "or" #'keyword-or)
+;  (make-keyword "||" #'keyword-or)
   (make-keyword "if" #'keyword-if)
   (make-keyword "try" #'keyword-try)
-  (make-keyword "while" #'keyword-while)
+  (make-keyword "while" #'keyword-while))
 
 (make-keywords)

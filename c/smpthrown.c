@@ -9,7 +9,6 @@
 int smpThrown_create_class()
 {
 	Object thrown = smp_getclass("Thrown");
-	smpType_def(thrown, SCOPE_INSTANCE_DATA | SCOPE_INTERNAL, "gc_mark", smpFunction_init(&smpThrown_gc_mark, 1, "Nil"));
 	smpType_def(thrown, SCOPE_INSTANCE_DATA, "to_s", smpFunction_init(&smpThrown_to_s, 1, "String"));
 	
 	return 0;
@@ -46,14 +45,6 @@ int smpThrown_contains_namep(Object obj, char *name)
 		if (smpType_name_eq(obj_core(SmpThrown, obj).objs[i], name))
 			return TRUE;
 	return FALSE;
-}
-
-Object smpThrown_gc_mark(Object obj, int argc, Object argv[])
-{
-	size_t i;
-	for (i = 0; i < obj_core(SmpThrown, obj).length; ++i)
-		gc_mark_recursive(NULL, obj_core(SmpThrown, obj).objs[i]);
-	return smp_nil;
 }
 
 Object smpThrown_get_first_value(Object obj)

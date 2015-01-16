@@ -20,11 +20,9 @@ int smpException_create_class()
 	smpGlobal_class("InternalException", smpType_runtime, 0);
 	smpGlobal_class("StringFormatException", smpType_runtime, 0);	
 
-	smpType_def(exc, SCOPE_INSTANCE_DATA | SCOPE_INTERNAL, "gc_mark", smpFunction_init(&smpException_gc_mark, 1, "Nil"));
 	smpType_def(exc, SCOPE_INSTANCE_DATA | SCOPE_INTERNAL, "clear", smpFunction_init(&smpException_clear, 1, "Nil"));
 	smpType_def(exc, SCOPE_INSTANCE_DATA, "to_s", smpFunction_init(&smpException_to_s, 1, "String"));
 	
-	smpType_def(type_exception, SCOPE_INSTANCE_DATA | SCOPE_INTERNAL, "gc_mark", smpFunction_init(&smpTypeError_gc_mark, 1, "Nil"));
 	smpType_def(type_exception, SCOPE_INSTANCE_DATA | SCOPE_INTERNAL, "clear", smpFunction_init(&smpTypeError_clear, 1, "Nil"));
 	smpType_def(type_exception, SCOPE_INSTANCE_DATA, "to_s", smpFunction_init(&smpTypeError_to_s, 1, "String"));
 	
@@ -50,12 +48,6 @@ Object smpException_backtrace_add_now(Object exc, Object obj, Object fun)
 Object smpException_clear(Object obj, int argc, Object argv[])
 {
 	smp_free(obj_core(SmpExc, obj).message);
-	return smp_nil;
-}
-
-Object smpException_gc_mark(Object obj, int argc, Object argv[])
-{
-	gc_mark_recursive(NULL, obj_core(SmpExc, obj).backtrace);
 	return smp_nil;
 }
 
@@ -126,13 +118,6 @@ Object smpTypeError_clear(Object obj, int argc, Object argv[])
 {
 	smp_free(obj_core(SmpTypeExc, obj).message);
 	return smp_nil;	
-}
-
-Object smpTypeError_gc_mark(Object obj, int argc, Object argv[])
-{
-	gc_mark_recursive(NULL, obj_core(SmpTypeExc, obj).backtrace);
-	gc_mark_recursive(NULL, obj_core(SmpTypeExc, obj).found);
-	return smp_nil;
 }
 
 Object smpTypeError_init(SmpType *expected, Object found)

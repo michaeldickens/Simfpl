@@ -96,12 +96,10 @@ int init_fundamental_classes()
 	smpType_nil = obj_core(SmpType, nilclass);
 	smp_nil = obj_init(&smpType_nil);
 	smpType_id_nil = smpType_nil.type_id;
-	smp_nil.frozenp = TRUE;
 	
 	smpGlobal_class("TrueClass", &obj_core(SmpType, boolclass), 
 			CLASS_SINGLETON | CLASS_FUNDAMENTAL);
 	smp_true = obj_init(&obj_core(SmpType, smp_getclass("TrueClass")));
-	smp_true.frozenp = TRUE;
 
 	/* Define Exception and its most important subclasses. */
 	smpGlobal_class("Exception", &smpType_object, CLASS_FUNDAMENTAL);
@@ -125,14 +123,15 @@ int init_fundamental_classes()
 	smpType_def(object, SCOPE_INSTANCE_DATA, "==", smpFunction_init(&smpObject_eq, 2, "Bool", "Object"));
 	smpType_def(object, SCOPE_INSTANCE_DATA | SCOPE_INTERNAL, "clear", smpFunction_init(&smpObject_clear, 1, "Nil"));
 	smpType_def(object, SCOPE_INSTANCE_DATA, "->", smpFunction_init(&smpObject_cons, 2, "List", "Object"));
+	smpType_def(object, SCOPE_INSTANCE_DATA, "connect", smpFunction_init(&smpObject_connect, 2, "List", "Object"));
 	smpType_def(object, SCOPE_INSTANCE_DATA, "cons", smpFunction_init(&smpObject_cons, 2, "List", "Object"));
 	smpType_def(object, SCOPE_INSTANCE_DATA, "eq?", smpFunction_init(&smpObject_eq, 2, "Bool", "Object"));
 	smpType_def(object, SCOPE_INSTANCE_DATA, "eql?", smpFunction_init(&smpObject_eql, 2, "Bool", "Object"));
 	smpType_def(object, SCOPE_INSTANCE_DATA, "equal?", smpFunction_init(&smpObject_equalp, 2, "Bool", "Object"));
 	smpType_def(object, SCOPE_CLASS_DATA, "funcall", smpFunction_init(&smpObject_funcall_arg, 4, "Object", "Function", "&rest", "Object"));
 	smpType_def(object, SCOPE_INSTANCE_DATA, "funcall", smpFunction_init(&smpObject_funcall_arg, 4, "Object", "Function", "&rest", "Object"));
-	smpType_def(object, SCOPE_INSTANCE_DATA | SCOPE_INTERNAL, "gc_mark", smpFunction_init(&smpObject_gc_mark, 1, "Nil"));
 	smpType_def(object, SCOPE_INSTANCE_DATA, "getclass", smpFunction_init(&smpObject_getclass, 1, "Class"));
+	smpType_def(object, SCOPE_INSTANCE_DATA, "hash", smpFunction_init(&smpObject_hash, 1, "Integer"));
 	smpType_def(object, SCOPE_INSTANCE_DATA, "to_s", smpFunction_init(&smpObject_to_s, 1, "String"));
 	smpType_def(object, SCOPE_CLASS_DATA, "to_s", smpFunction_init(&smpObject_to_s_class, 1, "String"));
 	smpType_def(object, SCOPE_INSTANCE_DATA, "type", smpFunction_init(&smpObject_type, 1, "Class"));
@@ -140,13 +139,12 @@ int init_fundamental_classes()
 	smpType_def(object, SCOPE_INSTANCE_DATA, "write", smpFunction_init(&smpObject_write, 1, "String"));
 	smpType_def(object, SCOPE_CLASS_DATA, "write", smpFunction_init(&smpObject_write_class, 1, "String"));
 	
-	smpType_def(object, SCOPE_INSTANCE_DATA, "and", smpFunction_init(&smpBool_and, 2, "Bool", "Object"));
-	smpType_def(object, SCOPE_INSTANCE_DATA, "or", smpFunction_init(&smpBool_or, 2, "Bool", "Object"));
-	smpType_def(object, SCOPE_INSTANCE_DATA, "xor", smpFunction_init(&smpBool_xor, 2, "Bool", "Object"));
-	smpType_def(object, SCOPE_INSTANCE_DATA, "&&", smpFunction_init(&smpBool_and, 2, "Bool", "Object"));
-	smpType_def(object, SCOPE_INSTANCE_DATA, "||", smpFunction_init(&smpBool_or, 2, "Bool", "Object"));
-
-	smpType_def(object, SCOPE_CLASS_DATA, "gc_mark", smpFunction_init(&smpType_gc_mark, 1, "Nil"));
+	// These should be defined as macros.
+	// smpType_def(object, SCOPE_INSTANCE_DATA, "and", smpFunction_init(&smpBool_and, 2, "Bool", "Object"));
+	// smpType_def(object, SCOPE_INSTANCE_DATA, "or", smpFunction_init(&smpBool_or, 2, "Bool", "Object"));
+	// smpType_def(object, SCOPE_INSTANCE_DATA, "xor", smpFunction_init(&smpBool_xor, 2, "Bool", "Object"));
+	// smpType_def(object, SCOPE_INSTANCE_DATA, "&&", smpFunction_init(&smpBool_and, 2, "Bool", "Object"));
+	// smpType_def(object, SCOPE_INSTANCE_DATA, "||", smpFunction_init(&smpBool_or, 2, "Bool", "Object"));
 	
 	smpType_def(smp_getclass("TrueClass"), SCOPE_INSTANCE_DATA, "to_s", smpFunction_init(&smptrue_to_s, 1, "String"));
 	

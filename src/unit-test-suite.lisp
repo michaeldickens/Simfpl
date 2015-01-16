@@ -4,6 +4,8 @@
   (load "parser.lisp")
   (check-equality 
     (equalp (split-string "hello world") '("hello" "world"))
+    (equalp (split-string "hello;world") '("hello" ";" "world"))
+    (equalp (split-string "word1 word2") '("word1" "word2"))
     (equalp (split-string "123letters") '("123" "letters"))
     (equalp (split-string "\"quote\"") '("\"quote\""))
     (equalp (split-string "\"quote\"123") '("\"quote\"" "123"))
@@ -11,6 +13,8 @@
     (equalp (split-string "\"hello\" \"world\"") '("\"hello\"" "\"world\""))
     (equalp (split-string "123.87-54") '("123.87" "-54"))
     (equalp (split-string "99.8e3+12") '("99.8e3" "+" "12"))
+    (equalp (split-string "4E-3") '("4E-3"))
+    (equalp (split-string "3.6E+3") '("3.6E+3"))
     (equalp (split-string "23E67+5.42E9") '("23E67" "+" "5.42E9"))
     (equalp (split-string "123'single quoted string'")
    	    '("123" "'single quoted string'"))

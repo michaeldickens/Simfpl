@@ -11,7 +11,6 @@ int smpFunction_create_class()
 	Object function = smp_getclass("Function");
 	
 	smpType_def(function, SCOPE_INSTANCE_DATA, "clear", smpFunction_init(&smpFunction_clear, 1, "Nil"));
-	smpType_def(function, SCOPE_INSTANCE_DATA, "gc_mark", smpFunction_init(&smpFunction_gc_mark, 1, "Nil"));
 	smpType_def(function, SCOPE_INSTANCE_DATA, "to_s", smpFunction_init(&smpFunction_to_s, 1, "String"));
 	
 	return 0;
@@ -93,19 +92,6 @@ Object smpFunction_clear(Object obj, int argc, Object argv[])
 	}
 	
 	smp_free(obj_core(SmpFun, obj).argspecs);
-	return smp_nil;
-}
-
-Object smpFunction_gc_mark(Object obj, int argc, Object argv[])
-{
-	SmpFun core = obj_core(SmpFun, obj);
-	
-	int i;
-	for (i = 0; i < core.argspecs_length; ++i) {
-		if (core.argspecs[i].optionalp)
-			gc_mark_recursive(NULL, core.argspecs[i].default_val);
-	}
-	
 	return smp_nil;
 }
 

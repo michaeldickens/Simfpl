@@ -9,10 +9,6 @@
 Object obj_init(SmpType *type)
 {
 	Object obj;
-	obj.gc_mark = smp_malloc(sizeof(int));
-	*obj.gc_mark = FALSE;
-	obj.on_gc_stackp = FALSE;
-	obj.frozenp = FALSE;
 	obj.type = type;
 	obj.core = NULL;
 	
@@ -60,11 +56,8 @@ Object obj_clear(Object *obj)
 		return smp_nil;
 	
 	smpObject_funcall(*obj, "clear", 0, NULL);
-	*obj->gc_mark = 0;
-	smp_free(obj->gc_mark);
 	smp_free(obj->core);
 	obj->type = NULL;
-	obj->gc_mark = NULL;
 	obj->core = NULL;
 	
 	return *obj;
@@ -110,6 +103,11 @@ int smpObject_cmp_fast(Object *err, Object obj, Object arg)
 	}
 }
 
+Object smpObject_connect(Object obj, int argc, Object argv[])
+{
+	return smpObject_cons_c(obj, smpObject_cons(argv[0], smp_nil));
+}
+
 Object smpObject_cons(Object obj, int argc, Object argv[])
 {
 	SmpList list;
@@ -151,7 +149,7 @@ Object smpObject_equalp(Object obj, int argc, Object argv[])
 	return smpObject_funcall(obj, "eq?", argc, argv);
 }
 
-Object smpObject_funcall(Object obj, char *name, int argc, Object argv[])
+Object smpObject_funcall(Object obj, const char *name, int argc, Object argv[])
 {	
 	Object res = smp_nil;
 	
@@ -184,12 +182,7 @@ Object smpObject_getclass(Object obj, int argc, Object argv[])
 	return smp_getclass(obj.type->name);
 }
 
-Object smpObject_gc_mark(Object obj, int argc, Object argv[])
-{
-	return smp_nil;
-}
-
-Object smpObject_get_fun(Object obj, char *name)
+Object smpObject_get_fun(Object obj, const char *name)
 {
 	if (smpType_id_eq(obj, smpType_id_class)) {
 		SmpType *type = &obj_core(SmpType, obj);
@@ -218,7 +211,7 @@ Object smpObject_get_fun(Object obj, char *name)
 	}
 }
 
-Object smpObject_get_fun_rec(SmpType *type, char *name, int instance_funp)
+Object smpObject_get_fun_rec(SmpType *type, const char *name, int instance_funp)
 {
 	if (type == NULL) {
 		return smp_nil;
@@ -260,17 +253,26 @@ Object smpObject_get_fun_rec(SmpType *type, char *name, int instance_funp)
  * which is why it is a good idea for classes to define their own hash 
  * functions.
  * 
- * Takes the pointer to the object's core and divides it by 8. Then it uses the 
- * name of the object's type and runs the well-known string-hashing algorithm 
- * on it.
+ * Does some bit arithmetic on the core pointer, then adds in the hash for 
+ * the first few characters of the type name.
+ * 
+ * TODO: possibly replace with MurmurHash
+ *       http://murmurhash.googlepages.com/
+ *       http://code.google.com/p/smhasher/wiki/MurmurHash3
  */
 Object smpObject_hash(Object obj, int argc, Object argv[])
 {
-	long hash = ((long) obj.core) >> 3;
+	long core = (long) obj.core;
 	
-	char *key = obj.type->name - 1;
-	while (*(++key))
-		hash = ((hash << 5) + hash) + *key;
+	/* I tried a number of different values here, and [0, 6, 10] seems to 
+	 * work best. Adding a fourth XOR does not appear to help.
+	 */
+	long hash = ((core) ^ (core >> 6) ^ (core >> 10));
+	
+	char *key = obj.type->name;
+	int i;
+	for (i = 0; i < 3 && *key; ++i)
+		hash = ((hash << 5) + hash) ^ *(key++);
 	return smpInteger_init_clong(hash);
 }
 

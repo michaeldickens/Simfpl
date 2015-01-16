@@ -223,7 +223,6 @@ Object smpArray_init();
  * SmpArray will change.
  */
 Object smpArray_init_array(Object *arr, size_t length);
-Object smpArray_gc_mark(Object obj, int argc, Object argv[]);
 
 Object smpArray_get_c(Object obj, size_t index);
 
@@ -326,7 +325,6 @@ int smpHash_core_clear(SmpHash *hash);
 Object smpHash_containsp(Object obj, int argc, Object argv[]);
 
 int smpHash_core_copy(SmpHash *res,SmpHash *hash);
-Object smpHash_gc_mark(Object obj, int argc, Object argv[]);
 
 /* Performs a function on each argument.
  * 

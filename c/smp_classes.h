@@ -43,9 +43,9 @@ int init_required_classes();
  */
 int init_fundamental_classes();
 
-
-
 SmpType smpType_int, smpType_float;
+
+typedef SmpListBuf SmpDEList;
 
 /* 
  * Number

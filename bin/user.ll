@@ -81,93 +81,25 @@ declare i32 @scope_pop()
 declare i32 @scope_push()
 
 
-@.smp_str1 = private constant [7 x i8] c"Global\00"
-@.smp_str2 = private constant [2 x i8] c"1\00"
-@.smp_str3 = private constant [2 x i8] c"2\00"
-@.smp_str4 = private constant [2 x i8] c"3\00"
-@.smp_str5 = private constant [6 x i8] c"array\00"
-@.smp_str6 = private constant [2 x i8] c"x\00"
-@.smp_str7 = private constant [2 x i8] c"*\00"
-@.smp_str8 = private constant [7 x i8] c"Object\00"
-@.smp_str9 = private constant [4 x i8] c"map\00"
-@.smp_str10 = private constant [8 x i8] c"println\00"
+@.smp_str1 = private constant [2 x i8] c"3\00"
+@.smp_str2 = private constant [2 x i8] c"4\00"
+@.smp_str3 = private constant [5 x i8] c"adsf\00"
 
-
-define %struct.obj_struct @smpGlobal_1(%struct.smpType_struct* %obj.coerce0, i8* %obj.coerce1,  i32 %argc, %struct.obj_struct* %argv) {
-  %1 = call i32 @scope_push()
-  %obj = alloca %struct.obj_struct, align 8
-  %2 = getelementptr %struct.obj_struct* %obj, i32 0, i32 0
-  store %struct.smpType_struct* %obj.coerce0, %struct.smpType_struct** %2
-  %3 = getelementptr %struct.obj_struct* %obj, i32 0, i32 1
-  store i8* %obj.coerce1, i8** %3
-  %smpGlobal_x = getelementptr inbounds %struct.obj_struct* %argv, i32 0
-  %4 = getelementptr inbounds %struct.obj_struct* %smpGlobal_x, i32 0, i32 0
-  %5 = load %struct.smpType_struct** %4
-  %6 = getelementptr inbounds %struct.obj_struct* %smpGlobal_x, i32 0, i32 1
-  %7 = load i8** %6
-  %8 = call i32 @scope_add(i8* getelementptr inbounds ([2 x i8]* @.smp_str6, i32 0, i32 0), %struct.smpType_struct* %5, i8* %7)
-  %9 = call %struct.obj_struct @smpInteger_init_str(i8* getelementptr inbounds ([2 x i8]* @.smp_str3, i32 0, i32 0))
-  %10 = call %struct.obj_struct @scope_get(i8* getelementptr inbounds ([2 x i8]* @.smp_str6, i32 0, i32 0))
-  %11 = alloca %struct.obj_struct, align 8
-  store %struct.obj_struct %10, %struct.obj_struct* %11, align 8
-  %12 = getelementptr inbounds %struct.obj_struct* %11, i32 0, i32 0
-  %13 = load %struct.smpType_struct** %12
-  %14 = getelementptr inbounds %struct.obj_struct* %11, i32 0, i32 1
-  %15 = load i8** %14
-  %16 = call i32 @smp_should_returnp_c(%struct.smpType_struct* %13, i8* %15)
-  %17 = icmp ne i32 %16, 0
-  br i1 %17, label %18, label %19
-
-; <label>:18
-  ret %struct.obj_struct %10
-
-; <label>:19
-  %20 = alloca [1 x %struct.obj_struct], align 8
-  %21 = getelementptr inbounds [1 x %struct.obj_struct]* %20, i32 0, i32 0
-  store %struct.obj_struct %10, %struct.obj_struct* %21, align 8
-  %22 = bitcast [1 x %struct.obj_struct]* %20 to %struct.obj_struct* 
-  %23 = alloca %struct.obj_struct, align 8
-  store %struct.obj_struct %9, %struct.obj_struct* %23, align 8
-  %24 = getelementptr inbounds %struct.obj_struct* %23, i32 0, i32 0
-  %25 = load %struct.smpType_struct** %24
-  %26 = getelementptr inbounds %struct.obj_struct* %23, i32 0, i32 1
-  %27 = load i8** %26
-  %28 = call %struct.obj_struct @smpObject_funcall(%struct.smpType_struct* %25, i8* %27, i8* getelementptr inbounds ([2 x i8]* @.smp_str7, i32 0, i32 0), i32 1, %struct.obj_struct* %22)
-  %29 = alloca %struct.obj_struct, align 8
-  store %struct.obj_struct %28, %struct.obj_struct* %29, align 8
-  %30 = getelementptr inbounds %struct.obj_struct* %29, i32 0, i32 0
-  %31 = load %struct.smpType_struct** %30
-  %32 = getelementptr inbounds %struct.obj_struct* %29, i32 0, i32 1
-  %33 = load i8** %32
-  %34 = call i32 @smp_should_returnp_c(%struct.smpType_struct* %31, i8* %33)
-  %35 = icmp ne i32 %34, 0
-  br i1 %35, label %36, label %37
-
-; <label>:36
-  ret %struct.obj_struct %28
-
-; <label>:37
-  %38 = call i32 @scope_pop()
-  ret %struct.obj_struct%28
-}
 
 define %struct.obj_struct @smpGlobal_main(%struct.smpType_struct* %obj.coerce0, i8* %obj.coerce1, i32 %argc, %struct.obj_struct* %argv) {
-  %1 = call %struct.obj_struct @scope_get(i8* getelementptr inbounds ([7 x i8]* @.smp_str1, i32 0, i32 0))
-  %2 = alloca %struct.obj_struct, align 8
-  store %struct.obj_struct %1, %struct.obj_struct* %2, align 8
-  %3 = getelementptr inbounds %struct.obj_struct* %2, i32 0, i32 0
-  %4 = load %struct.smpType_struct** %3
-  %5 = getelementptr inbounds %struct.obj_struct* %2, i32 0, i32 1
-  %6 = load i8** %5
-  %7 = call i32 @smp_should_returnp_c(%struct.smpType_struct* %4, i8* %6)
-  %8 = icmp ne i32 %7, 0
-  br i1 %8, label %9, label %10
-
-; <label>:9
-  ret %struct.obj_struct %1
-
-; <label>:10
-  %11 = call %struct.obj_struct @scope_get(i8* getelementptr inbounds ([7 x i8]* @.smp_str1, i32 0, i32 0))
+  %1 = call %struct.obj_struct @smpInteger_init_str(i8* getelementptr inbounds ([2 x i8]* @.smp_str1, i32 0, i32 0))
+  %2 = call %struct.obj_struct @smpInteger_init_str(i8* getelementptr inbounds ([2 x i8]* @.smp_str2, i32 0, i32 0))
+  %3 = alloca [1 x %struct.obj_struct], align 8
+  %4 = getelementptr inbounds [1 x %struct.obj_struct]* %3, i32 0, i32 0
+  store %struct.obj_struct %2, %struct.obj_struct* %4, align 8
+  %5 = bitcast [1 x %struct.obj_struct]* %3 to %struct.obj_struct* 
+  %6 = alloca %struct.obj_struct, align 8
+  store %struct.obj_struct %1, %struct.obj_struct* %6, align 8
+  %7 = getelementptr inbounds %struct.obj_struct* %6, i32 0, i32 0
+  %8 = load %struct.smpType_struct** %7
+  %9 = getelementptr inbounds %struct.obj_struct* %6, i32 0, i32 1
+  %10 = load i8** %9
+  %11 = call %struct.obj_struct @smpObject_funcall(%struct.smpType_struct* %8, i8* %10, i8* getelementptr inbounds ([5 x i8]* @.smp_str3, i32 0, i32 0), i32 1, %struct.obj_struct* %5)
   %12 = alloca %struct.obj_struct, align 8
   store %struct.obj_struct %11, %struct.obj_struct* %12, align 8
   %13 = getelementptr inbounds %struct.obj_struct* %12, i32 0, i32 0
@@ -182,117 +114,6 @@ define %struct.obj_struct @smpGlobal_main(%struct.smpType_struct* %obj.coerce0, 
   ret %struct.obj_struct %11
 
 ; <label>:20
-  %21 = call %struct.obj_struct @smpInteger_init_str(i8* getelementptr inbounds ([2 x i8]* @.smp_str2, i32 0, i32 0))
-  %22 = call %struct.obj_struct @smpInteger_init_str(i8* getelementptr inbounds ([2 x i8]* @.smp_str3, i32 0, i32 0))
-  %23 = call %struct.obj_struct @smpInteger_init_str(i8* getelementptr inbounds ([2 x i8]* @.smp_str4, i32 0, i32 0))
-  %24 = alloca [3 x %struct.obj_struct], align 8
-  %25 = getelementptr inbounds [3 x %struct.obj_struct]* %24, i32 0, i32 2
-  store %struct.obj_struct %23, %struct.obj_struct* %25, align 8
-  %26 = getelementptr inbounds [3 x %struct.obj_struct]* %24, i32 0, i32 1
-  store %struct.obj_struct %22, %struct.obj_struct* %26, align 8
-  %27 = getelementptr inbounds [3 x %struct.obj_struct]* %24, i32 0, i32 0
-  store %struct.obj_struct %21, %struct.obj_struct* %27, align 8
-  %28 = bitcast [3 x %struct.obj_struct]* %24 to %struct.obj_struct* 
-  %29 = alloca %struct.obj_struct, align 8
-  store %struct.obj_struct %11, %struct.obj_struct* %29, align 8
-  %30 = getelementptr inbounds %struct.obj_struct* %29, i32 0, i32 0
-  %31 = load %struct.smpType_struct** %30
-  %32 = getelementptr inbounds %struct.obj_struct* %29, i32 0, i32 1
-  %33 = load i8** %32
-  %34 = call %struct.obj_struct @smpObject_funcall(%struct.smpType_struct* %31, i8* %33, i8* getelementptr inbounds ([6 x i8]* @.smp_str5, i32 0, i32 0), i32 3, %struct.obj_struct* %28)
-  %35 = alloca %struct.obj_struct, align 8
-  store %struct.obj_struct %34, %struct.obj_struct* %35, align 8
-  %36 = getelementptr inbounds %struct.obj_struct* %35, i32 0, i32 0
-  %37 = load %struct.smpType_struct** %36
-  %38 = getelementptr inbounds %struct.obj_struct* %35, i32 0, i32 1
-  %39 = load i8** %38
-  %40 = call i32 @smp_should_returnp_c(%struct.smpType_struct* %37, i8* %39)
-  %41 = icmp ne i32 %40, 0
-  br i1 %41, label %42, label %43
-
-; <label>:42
-  ret %struct.obj_struct %34
-
-; <label>:43
-  %44 = call %struct.obj_struct @scope_get(i8* getelementptr inbounds ([7 x i8]* @.smp_str1, i32 0, i32 0))
-  %45 = alloca %struct.obj_struct, align 8
-  store %struct.obj_struct %44, %struct.obj_struct* %45, align 8
-  %46 = getelementptr inbounds %struct.obj_struct* %45, i32 0, i32 0
-  %47 = load %struct.smpType_struct** %46
-  %48 = getelementptr inbounds %struct.obj_struct* %45, i32 0, i32 1
-  %49 = load i8** %48
-  %50 = call i32 @smp_should_returnp_c(%struct.smpType_struct* %47, i8* %49)
-  %51 = icmp ne i32 %50, 0
-  br i1 %51, label %52, label %53
-
-; <label>:52
-  ret %struct.obj_struct %44
-
-; <label>:53
-  %54 = call %struct.obj_struct (%struct.obj_struct (%struct.smpType_struct*, i8*, i32, %struct.obj_struct* )*, i32, ...)* @smpFunction_init(%struct.obj_struct (%struct.smpType_struct*, i8*, i32, %struct.obj_struct* )* @smpGlobal_1, i32 2, i8* getelementptr inbounds ([7 x i8]* @.smp_str8, i32 0, i32 0), i8* getelementptr inbounds ([7 x i8]* @.smp_str8, i32 0, i32 0))
-  %55 = alloca %struct.obj_struct, align 8
-  store %struct.obj_struct %44, %struct.obj_struct* %55, align 8
-  %56 = getelementptr inbounds %struct.obj_struct* %55, i32 0, i32 0
-  %57 = load %struct.smpType_struct** %56
-  %58 = getelementptr inbounds %struct.obj_struct* %55, i32 0, i32 1
-  %59 = load i8** %58
-  %60 = alloca %struct.obj_struct, align 8
-  store %struct.obj_struct %54, %struct.obj_struct* %60, align 8
-  %61 = getelementptr inbounds %struct.obj_struct* %60, i32 0, i32 0
-  %62 = load %struct.smpType_struct** %61
-  %63 = getelementptr inbounds %struct.obj_struct* %60, i32 0, i32 1
-  %64 = load i8** %63
-  %65 = call %struct.obj_struct @smpType_def(%struct.smpType_struct* %57, i8* %59, i32 1, i8* getelementptr inbounds ([2 x i8]* @.smp_str2, i32 0, i32 0), %struct.smpType_struct* %62, i8* %64)
-  %66 = alloca [1 x %struct.obj_struct], align 8
-  %67 = getelementptr inbounds [1 x %struct.obj_struct]* %66, i32 0, i32 0
-  store %struct.obj_struct %65, %struct.obj_struct* %67, align 8
-  %68 = bitcast [1 x %struct.obj_struct]* %66 to %struct.obj_struct* 
-  %69 = alloca %struct.obj_struct, align 8
-  store %struct.obj_struct %34, %struct.obj_struct* %69, align 8
-  %70 = getelementptr inbounds %struct.obj_struct* %69, i32 0, i32 0
-  %71 = load %struct.smpType_struct** %70
-  %72 = getelementptr inbounds %struct.obj_struct* %69, i32 0, i32 1
-  %73 = load i8** %72
-  %74 = call %struct.obj_struct @smpObject_funcall(%struct.smpType_struct* %71, i8* %73, i8* getelementptr inbounds ([4 x i8]* @.smp_str9, i32 0, i32 0), i32 1, %struct.obj_struct* %68)
-  %75 = alloca %struct.obj_struct, align 8
-  store %struct.obj_struct %74, %struct.obj_struct* %75, align 8
-  %76 = getelementptr inbounds %struct.obj_struct* %75, i32 0, i32 0
-  %77 = load %struct.smpType_struct** %76
-  %78 = getelementptr inbounds %struct.obj_struct* %75, i32 0, i32 1
-  %79 = load i8** %78
-  %80 = call i32 @smp_should_returnp_c(%struct.smpType_struct* %77, i8* %79)
-  %81 = icmp ne i32 %80, 0
-  br i1 %81, label %82, label %83
-
-; <label>:82
-  ret %struct.obj_struct %74
-
-; <label>:83
-  %84 = alloca [1 x %struct.obj_struct], align 8
-  %85 = getelementptr inbounds [1 x %struct.obj_struct]* %84, i32 0, i32 0
-  store %struct.obj_struct %74, %struct.obj_struct* %85, align 8
-  %86 = bitcast [1 x %struct.obj_struct]* %84 to %struct.obj_struct* 
-  %87 = alloca %struct.obj_struct, align 8
-  store %struct.obj_struct %1, %struct.obj_struct* %87, align 8
-  %88 = getelementptr inbounds %struct.obj_struct* %87, i32 0, i32 0
-  %89 = load %struct.smpType_struct** %88
-  %90 = getelementptr inbounds %struct.obj_struct* %87, i32 0, i32 1
-  %91 = load i8** %90
-  %92 = call %struct.obj_struct @smpObject_funcall(%struct.smpType_struct* %89, i8* %91, i8* getelementptr inbounds ([8 x i8]* @.smp_str10, i32 0, i32 0), i32 1, %struct.obj_struct* %86)
-  %93 = alloca %struct.obj_struct, align 8
-  store %struct.obj_struct %92, %struct.obj_struct* %93, align 8
-  %94 = getelementptr inbounds %struct.obj_struct* %93, i32 0, i32 0
-  %95 = load %struct.smpType_struct** %94
-  %96 = getelementptr inbounds %struct.obj_struct* %93, i32 0, i32 1
-  %97 = load i8** %96
-  %98 = call i32 @smp_should_returnp_c(%struct.smpType_struct* %95, i8* %97)
-  %99 = icmp ne i32 %98, 0
-  br i1 %99, label %100, label %101
-
-; <label>:100
-  ret %struct.obj_struct %92
-
-; <label>:101
-  ret %struct.obj_struct %92
+  ret %struct.obj_struct %11
 }
 

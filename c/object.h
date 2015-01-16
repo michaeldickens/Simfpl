@@ -72,12 +72,6 @@ typedef struct smpType_struct {
  * Objects are represented internally using this Object typedef. Objects contain 
  * the following values.
  * 
- * gc_mark: A pointer to a mark used by the garbage collector (see gc.h for more 
- *     info).
- * frozenp: Indicates whether the object is frozen. A frozen object may not be 
- *     modified.
- * on_gc_stackp: A boolean used by the garbage collector to determine if the 
- *     object is on the gc stack.
  * type: A pointer to an SmpType holding the object's type.
  * core: A void pointer to the object's actual contents. What this contains 
  *     depends on the type of object. Any internally-defined functions must cast 
@@ -88,9 +82,6 @@ typedef struct smpType_struct {
  * 
  */
 typedef struct obj_struct {
-	int *gc_mark;
-	int frozenp : 1;
-	int on_gc_stackp : 1;
 	SmpType *type;
 	void *core;
 } Object;
@@ -169,6 +160,13 @@ Object smpObject_clear(Object obj, int argc, Object argv[]);
 int smpObject_cmp_fast(Object *err, Object obj, Object arg);
 
 /* 
+ * Connects two elements into a List.
+ * 
+ * (a connect b) is equivalent to (a cons (b cons nil)).
+ */
+Object smpObject_connect(Object obj, int argc, Object argv[]);
+
+/* 
  * Conses two elements together. If the cdr element is a List, the return type 
  * is a List. Otherwise, the return type is a Pair.
  */
@@ -183,7 +181,8 @@ Object smpObject_equalp(Object obj, int argc, Object argv[]);
  * Calls a function. Does not check whether the user has permission to call the 
  * function, so permission checking must be done before this point.
  */
-Object smpObject_funcall(Object obj, char *name, int argc, Object argv[]);
+Object smpObject_funcall(Object obj, const char *name, int argc, 
+	Object argv[]);
 
 /* argv[0]: A Function.
  * argv[1]: A List containing the arguments.
@@ -191,8 +190,9 @@ Object smpObject_funcall(Object obj, char *name, int argc, Object argv[]);
 Object smpObject_funcall_arg(Object obj, int argc, Object argv[]);
 
 Object smpObject_getclass(Object obj, int argc, Object argv[]);
-Object smpObject_get_fun(Object obj, char *name);
-Object smpObject_get_fun_rec(SmpType *type, char *name, int instance_funp);
+Object smpObject_get_fun(Object obj, const char *name);
+Object smpObject_get_fun_rec(SmpType *type, const char *name, 
+	int instance_funp);
 
 Object smpObject_gc_mark(Object obj, int argc, Object argv[]);
 Object smpObject_hash(Object obj, int argc, Object argv[]);
@@ -292,15 +292,15 @@ int minihash_fullclear(MiniHash *hash);
 /* 
  * Compute the hash value for the given key.
  */
-int minihash_function(char *key);
+int minihash_function(const char *key);
 
 /* Puts the object reference into the hash.
  */
 int minihash_add(MiniHash *hash, char *key, Object val);
 
 int miniarray_push(MiniArray *arr, MiniPair pair);
-Object minihash_get(MiniHash *hash, char *key);
-int minihash_containsp(MiniHash *hash, char *key);
+Object minihash_get(MiniHash *hash, const char *key);
+int minihash_containsp(MiniHash *hash, const char *key);
 
 /* Copies hash's contents into res. The objects in res will be references to 
  * the the same objects as in hash.

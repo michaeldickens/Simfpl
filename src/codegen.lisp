@@ -31,7 +31,7 @@
 (defparameter *string-num* 0)
 
 (defparameter *string-literals* "")
-(defparameter *string-literal-hash* (make-hash-table :test 'equalp))
+(defparameter *string-literal-hash* (make-hash-table :test 'equal))
 
 (defparameter *lambda-num* 0)
 (defparameter *llvm-functions* "")
@@ -72,9 +72,18 @@
 (load "keywords.lisp")
 
 
+;;; TODO: This needs some major refactoring. As it is now: 
+;;;   (1) compile obj and args
+;;;   (2) call funcall(obj, name, args)
+;;; It should do this instead: 
+;;;   (1) compile obj
+;;;   (2) retrieve fun
+;;;   (3) compile args, taking arg modifiers into account
+;;;   (4) call funcall(obj, fun, args)
 (defun llvm-funcall (obj name args &key (indent ""))
   (let (
       (instruction-nums nil) ; a list corresponding to obj + args
+      (start-instruction nil)
       (res-instruction nil)
       (res nil)
 
@@ -95,9 +104,6 @@
     ;; Compile the function differently depending on how many arguments it has.
     (cond
       ((eq argc 0) (setf argv (concatenate 'string *obj-decl* "null")))
-      ((eq argc 1) 
-        (setf argv (concatenate 'string *obj-decl* 
-		     (instruction-to-string (cadr instruction-nums)))))
       (t
         (setf arg-instruction (next-instruction))
 	(setf res (concatenate 'string res 
@@ -108,9 +114,8 @@
 	        "getelementptr inbounds [" (write-to-string argc) " x " 
 	        *obj-noptr* "]* " (instruction-to-string arg-instruction)
 	        ", i32 0, i32 " (write-to-string n) *newline*
-	      (progn (next-instruction) "")
-  	      (load-form *instruction-counter* (nth n (cdr instruction-nums)))
-	      (store-form *instruction-counter* (- *instruction-counter* 1))))
+  	      (store-form (nth n (cdr instruction-nums)) 
+			  *instruction-counter*)))
 	    ;; build a list of indices, e.g. '(3 2 1 0)
 	    (reduce #'(lambda (n x) 
 			(if n (cons (+ (car n) 1) n) (list 0)))
@@ -123,74 +128,55 @@
 	(setf argv (concatenate 'string *obj-decl* 
                      (instruction-to-string *instruction-counter*)))))
 
+    (setf start-instruction (next-instruction))
+    (dotimes (number 4) (next-instruction))
     (setf res-instruction (next-instruction))
-    (dotimes (number 5) (next-instruction))
+    (dotimes (number 9) (next-instruction))
     (setf *prev-instruction* res-instruction)
     
-    (setf res (concatenate 'string res 
-		indent (instruction-to-string res-instruction)
-		  " = alloca " *obj-noptr* ", align 8" *newline*
-	        indent "call void @smpObject_funcall(" *obj-decl* "sret "
-		  (instruction-to-string res-instruction)
-		  ", " *obj-decl* "byval " 
-		  (instruction-to-string (car instruction-nums)) ", "
-		  (make-string-literal name)
-		  ", i32 " (write-to-string argc)
-		  ", " argv ")" *newline*
-		(check-for-return-form res-instruction)))))
+    (setf res 
+	  (concatenate 'string res 
+	    (funcall-form res-instruction (car instruction-nums) 
+			  start-instruction name argc argv)))))
     
 
 (defun codegen-sexp (sexp &key (indent ""))
   (cond
     ((null sexp)
-      (setf *prev-instruction* "@smp_nil")
-      "")
-
-    ((eq sexp t)
-      (setf *prev-instruction* "@smp_true")
-      "")
-
-    ;; If sexp is an integer less than 2**31, instantiate it using a native 
-    ;; integer. Otherwise, instantiate it using a native string.
-    ((typep sexp 'number)
       (setf *prev-instruction* (next-instruction))
       (concatenate 'string 
-	indent (instruction-counter-to-string) 
-	  " = alloca " *obj-noptr* ", align 8" *newline*
-	(if (and (typep sexp 'integer) (< sexp (expt 2 31)))
-	  (concatenate 'string 
-	    indent "call void @smpInteger_init_clong(" *obj-decl* "sret "
-	      (instruction-counter-to-string) ", i64 " 
-	      (write-to-string sexp) ")" *newline*)
-	  (concatenate 'string 
-    	    indent "call void @smp" (if (typep sexp 'integer) 
-				      "Integer" 
-				      "Float")
-  	      "_init_str(" *obj-decl* "sret " (instruction-counter-to-string) 
-	      ", " (make-string-literal sexp) ")" *newline*))))
+	(load-form *prev-instruction* "@smp_nil")))
+
+    ((eq sexp t)
+      (setf *prev-instruction* (next-instruction))
+      (concatenate 'string 
+	(load-form *prev-instruction* "@smp_true")))
+
+    ((typep sexp 'smp-number)
+      (setf *prev-instruction* (next-instruction))
+      (concatenate 'string 
+        indent (instruction-counter-to-string) " = call " *obj-noptr* 
+          " @smp" (if (typep sexp 'smp-integer) "Integer" "Float")
+	  "_init_str(" (make-string-literal (make-smp-symbol sexp)) 
+	  ")" *newline*))
 
     ((typep sexp 'string)
       (setf *prev-instruction* (next-instruction))
-      (dotimes (number 5) (next-instruction))
+      (dotimes (number 9) (next-instruction))
       (concatenate 'string
-        indent (prev-instruction-to-string)
-	  " = alloca " *obj-noptr* ", align 8" *newline*
-	indent "call void @smpString_init(" *obj-decl* "sret " 
-	  (prev-instruction-to-string) ", "
-	  (make-string-literal (make-smp-symbol sexp)) ")" *newline*
+	indent (prev-instruction-to-string) " = call " *obj-noptr* 
+	  " @smpString_init(" (make-string-literal (make-smp-symbol sexp)) 
+	  ")" *newline*
 	(check-for-return-form *prev-instruction*)))
 
     ((typep sexp 'smp-symbol)
       (if (scope-exists sexp)
 	(progn
 	  (setf *prev-instruction* (next-instruction))
-	  (dotimes (number 5) (next-instruction))
+	  (dotimes (number 9) (next-instruction))
 	  (concatenate 'string 
-	    indent (prev-instruction-to-string) " = alloca "
-	      *obj-noptr* ", align 8" *newline*
-	    indent "call void @scope_get(" *obj-decl* 
-	      (prev-instruction-to-string)  ", " 
-	      (make-string-literal sexp) ")" *newline*
+	    indent (prev-instruction-to-string) " = call " *obj-noptr* 
+	      " @scope_get(" (make-string-literal sexp) ")" *newline*
 	    (check-for-return-form *prev-instruction*)))
 	(error 'undefined-symbol-error :message sexp)))
 
@@ -209,7 +195,7 @@
 
 	;; Call llvm-funcall to generate the code for the function call.
 	(t (llvm-funcall (car sexp) (cadr sexp) (cddr sexp) :indent indent))))
-    (t nil))) ; TODO: add error handling code
+    (t (error 'syntax-error :message sexp))))
 
 
 
@@ -219,7 +205,7 @@
 ;;; TODO: Make the filepath flexible.
 (defun codegen (sexp)
   (let ((compiled-sexp (codegen-sexp sexp :indent "  "))
-	(rfile (open "../data/user-start.txt"))
+	(rfile (open "../bin/user-start.ll"))
 	(start-str nil)
 	(res nil)
 	(indent "  "))
@@ -229,20 +215,18 @@
 	      (format nil "~a~%" line))))
     (close rfile)
 
-    (next-instruction)
     (setf res (concatenate 'string start-str *newline*
       *string-literals* *newline* 
       *llvm-functions* *newline* 
-      "define void @smpGlobal_main(" *obj-decl* "sret %agg.result, "
-        *obj-decl* "byval %obj, i32 %argc, " *obj-decl* "%argv) {" *newline*
-      compiled-sexp 
-      (load-form *instruction-counter* *prev-instruction*)
-      (store-form *instruction-counter* "agg.result")
-      indent "ret void" *newline*
+      "define " *obj-noptr* " @smpGlobal_main(%struct.smpType_struct* "
+        "%obj.coerce0, i8* %obj.coerce1, i32 %argc, " *obj-decl* "%argv) {"
+	*newline*
+      compiled-sexp
+
+      indent "ret " *obj-noptr* " " (instruction-to-string *prev-instruction*)
+        *newline*
       "}" *newline* *newline*))
-    
-    (let ((wfile (open "../c/user.ll" 
-		       :direction :output :if-exists :supersede)))
-      (write-string res wfile)
-      (close wfile))
+
+    (write-to-file "../bin/user.ll" res)
     res))
+

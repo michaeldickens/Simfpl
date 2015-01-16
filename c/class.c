@@ -9,7 +9,6 @@
 int smp_putclass(SmpType type)
 {
 	Object wrapper = obj_init(&smpType_class);
-	wrapper.frozenp = TRUE;
 	wrapper.core = smp_malloc(sizeof(SmpType));
 	
 	obj_core(SmpType, wrapper) = type;

@@ -3,14 +3,14 @@
  *  Simfpl2
  *
  *  Created by Michael Dickens on 6/28/11.
- *
+ *  
+ *  Implementation for a linked list type.
  */
 
 int smpList_create_class()
 {
 	Object listclass = smp_getclass("List");
 	
-	smpType_def(listclass, SCOPE_INSTANCE_DATA | SCOPE_INTERNAL, "gc_mark", smpFunction_init(&smpList_gc_mark, 1, "Nil"));
 	smpType_def(listclass, SCOPE_INSTANCE_DATA, "+", smpFunction_init(&smpList_add, 2, "List", "Object"));
 	smpType_def(listclass, SCOPE_INSTANCE_DATA, "add!", smpFunction_init(&smpList_add_now, 2, "List", "Object"));
 	smpType_def(listclass, SCOPE_INSTANCE_DATA, "append", smpFunction_init(&smpList_append, 2, "List", "Object"));
@@ -22,7 +22,7 @@ int smpList_create_class()
 	smpType_def(listclass, SCOPE_INSTANCE_DATA, "concat", smpFunction_init(&smpList_concat, 2, "List", "List"));
 	smpType_def(listclass, SCOPE_INSTANCE_DATA, "concat!", smpFunction_init(&smpList_concat_now, 2, "List", "List"));
 	smpType_def(listclass, SCOPE_INSTANCE_DATA, "copy", smpFunction_init(&smpList_copy, 1, "List"));
-	smpType_def(listclass, SCOPE_INSTANCE_DATA, "each", smpFunction_init(&smpList_each, 1, "Nil"));
+	smpType_def(listclass, SCOPE_INSTANCE_DATA, "each", smpFunction_init(&smpList_each, 2, "Nil", "Function"));
 	smpType_def(listclass, SCOPE_INSTANCE_DATA, "empty?", smpFunction_init(&smpList_emptyp, 1, "Bool"));
 	smpType_def(listclass, SCOPE_INSTANCE_DATA, "equal?", smpFunction_init(&smpList_equalp, 2, "Bool", "Object"));
 	smpType_def(listclass, SCOPE_INSTANCE_DATA, "length", smpFunction_init(&smpList_length, 1, "Integer"));
@@ -41,7 +41,6 @@ int smpList_create_class()
 
 Object smpList_add(Object obj, int argc, Object argv[])
 {
-	;
 	Object obj2 = smpList_copy(obj, 0, NULL);
 	
 	Object arg2 = argv[0];
@@ -54,12 +53,13 @@ Object smpList_add(Object obj, int argc, Object argv[])
 
 Object smpList_add_now(Object obj, int argc, Object argv[])
 {
-	if (smpType_id_eq(obj, smpType_id_nil))
+	if (smpType_id_eq(obj, smpType_id_nil)) {
 		if (smpType_id_eq(argv[0], smpType_id_list)) {
 			return argv[0];
 		} else {
 			return smpObject_cons_c(argv[0], smp_nil);
 		}
+	}
 	
 	Object *ptr = &obj;
 	while (obj_core(SmpList, *ptr).cdr) {
@@ -103,14 +103,11 @@ Object smpList_append_now(Object obj, int argc, Object argv[])
 		
 	SmpList *list_core = &obj_core(SmpList, *ptr);	
 	Object cons_cell = smp_nil;
-		
-	;
 	
 	cons_cell = smpObject_cons_c(argv[0], smp_nil);
 	list_core->cdr = smp_malloc(sizeof(Object));
 	*list_core->cdr = cons_cell;
 	
-	;
 	return obj;	
 }
 
@@ -278,18 +275,6 @@ Object smpList_equalp(Object obj, int argc, Object argv[])
 	return smp_true;
 }
 
-Object smpList_gc_mark(Object obj, int argc, Object argv[])
-{
-	smpList_check_nil(obj);
-	Object *ptr = &obj;
-	while (ptr) {
-		gc_mark_recursive(NULL, obj_core(SmpList, *ptr).car);
-		GC_MARK_OBJECT(*ptr);
-		ptr = obj_core(SmpList, *ptr).cdr;
-	}
-	return smp_nil;
-}
-
 Object smpList_init(SmpList list)
 {
 	Object res = obj_init(&smpType_list);
@@ -400,10 +385,22 @@ Object smpList_reduce(Object obj, int argc, Object argv[])
 	return pair[0];
 }
 
+/* This hasn't been tested but it should work.
+ * It looks one node ahead and then points that node to the current node.
+ * O(n) runtime, O(1) memory
+ */
+Object smpList_reverse_now_attempt(Object obj, int argc, Object argv[])
+{
+	
+}
+
+/* 
+ * Creates a new list. Then reads through the current list and conses each 
+ * element onto the new list. This works because iteration moves right and cons 
+ * moves left.
+ */
 Object smpList_reverse(Object obj, int argc, Object argv[])
 {
-	;
-	
 	Object res = smp_nil;
 	Object *ptr = &obj;
 	Object car = smp_nil;
@@ -412,7 +409,6 @@ Object smpList_reverse(Object obj, int argc, Object argv[])
 		ptr = obj_core(SmpList, *ptr).cdr;
 	}
 	
-	;
 	return res;
 }
 

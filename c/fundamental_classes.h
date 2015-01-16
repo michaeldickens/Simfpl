@@ -37,7 +37,6 @@ int smpPair_create_class();
 Object smpPair_car(Object obj, int argc, Object argv[]);
 Object smpPair_cdr(Object obj, int argc, Object argv[]);
 Object smpPair_clear(Object obj, int argc, Object argv[]);
-Object smpPair_gc_mark(Object obj, int argc, Object argv[]);
 Object smpPair_init(Object car, Object cdr);
 
 /* Sets the car to argv[0]. */
@@ -85,16 +84,10 @@ Object smpList_car(Object obj, int argc, Object argv[]);
 Object smpList_cdr(Object obj, int argc, Object argv[]);
 Object smpList_concat(Object obj, int argc, Object argv[]);
 Object smpList_concat_now(Object obj, int argc, Object argv[]);
-
-/* Clears the list. Note that this does not clear the objects inside the list.
- */
-Object smpList_clear(Object obj, int argc, Object argv[]);
-
 Object smpList_copy(Object obj, int argc, Object argv[]);
 Object smpList_each(Object obj, int argc, Object argv[]);
 Object smpList_emptyp(Object obj, int argc, Object argv[]);
 Object smpList_equalp(Object obj, int argc, Object argv[]);
-Object smpList_gc_mark(Object obj, int argc, Object argv[]);
 Object smpList_init(SmpList list);
 
 Object smpList_length(Object obj, int argc, Object argv[]);
@@ -132,8 +125,10 @@ typedef struct listbuf_struct {
 	Object last;
 } SmpListBuf;
 
+/* 
+ * Adds arg[0] to the end of the list.
+ */
 Object smpListBuffer_add_now(Object obj, int argc, Object argv[]);
-Object smpListBuffer_gc_mark(Object obj, int argc, Object argv[]);
 Object smpListBuffer_init();
 Object smpListBuffer_to_list(Object obj, int argc, Object argv[]);
 
@@ -232,7 +227,6 @@ Object smpType_def(Object type, int flags, char *name, Object fun);
 Object smpType_defvar(Object type, int flags, char *name, Object var);
 
 Object smpType_equalp(Object obj, int argc, Object argv[]);
-Object smpType_gc_mark(Object obj, int argc, Object argv[]);
 
 /* Tests whether the first class is the same as or the subclass of the second 
  * class.
@@ -306,7 +300,6 @@ int smpFunction_create_class();
 
 Object smpFunction_call(Object obj, Object fun, int argc, Object argv[]);
 Object smpFunction_clear(Object obj, int argc, Object argv[]);
-Object smpFunction_gc_mark(Object obj, int argc, Object argv[]);
 
 /* Initializes a function.
  * 
@@ -352,14 +345,12 @@ int smpException_create_class();
  */
 Object smpException_backtrace_add_now(Object exc, Object obj, Object fun);
 Object smpException_clear(Object obj, int argc, Object argv[]);
-Object smpException_gc_mark(Object obj, int argc, Object argv[]);
 Object smpException_init(Object type);
 Object smpException_init_fmt(Object type, const char *fmt, ...);
 Object smpException_print(Object obj);
 Object smpException_to_s(Object obj, int argc, Object argv[]);
 
 Object smpTypeError_clear(Object obj, int argc, Object argv[]);
-Object smpTypeError_gc_mark(Object obj, int argc, Object argv[]);
 Object smpTypeError_init(SmpType *expected, Object found);
 Object smpTypeError_init_detailed(SmpType *expected, Object found, const char *fmt, ...);
 Object smpTypeError_init_fmt(const char *fmt, ...);
@@ -386,7 +377,6 @@ int smpThrown_create_class();
 
 Object smpThrown_add_exception_now(Object *obj, Object exc);
 int smpThrown_contains_namep(Object obj, char *name);
-Object smpThrown_gc_mark(Object obj, int argc, Object argv[]);
 Object smpThrown_init(int type, Object obj);
 Object smpThrown_get_first_value(Object obj);
 

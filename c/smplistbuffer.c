@@ -13,7 +13,6 @@ int smpListBuffer_create_class()
 	Object listbuf = smp_getclass("ListBuffer");
 	
 	smpType_def(listbuf, SCOPE_INSTANCE_DATA, "add!", smpFunction_init(&smpListBuffer_add_now, 2, "Nil", "Object"));
-	smpType_def(listbuf, SCOPE_INSTANCE_DATA, "gc_mark", smpFunction_init(&smpListBuffer_gc_mark, 1, "Nil"));
 	smpType_def(listbuf, SCOPE_INSTANCE_DATA, "to_list", smpFunction_init(&smpListBuffer_to_list, 1, "List"));
 	
 	return 0;
@@ -32,12 +31,6 @@ Object smpListBuffer_add_now(Object obj, int argc, Object argv[])
 		lb->last = *obj_core(SmpList, lb->last).cdr;
 	}
 	
-	return smp_nil;
-}
-
-Object smpListBuffer_gc_mark(Object obj, int argc, Object argv[])
-{
-	gc_mark_recursive(NULL, obj_core(SmpListBuf, obj).first);
 	return smp_nil;
 }
 

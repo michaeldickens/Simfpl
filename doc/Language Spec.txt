@@ -21,7 +21,7 @@ These unconventional principles dictate that Simfpl include lazy evaluation, fun
 
 -----
 
- *** Standard Types ***
+  *** Standard Types ***
 
 Object: The class from which all other classes inherit.
 
@@ -29,7 +29,41 @@ Integer: A positive or negative whole number.
 
 Float: A floating-point number.
 
- *** Special Object Syntax ***
+-----
+
+***New Syntax***
+
+WARNING: Everything below this section has not been updated to incorporate the new syntax.
+
+If variables and functions share a typographical namespace, a word cannot be unambiguously resolved to a variable or function without using all those ugly Lisp parentheses. These new syntax rules are better.
+
+A word is considered a function if any of these conditions are satisfied: 
+ * it follows a period; 
+ * it begins with a non-alphanumeric character (e.g. '+', '<=', '&&'); 
+ * it exists as a function inside the current class or an outer class; 
+ * it is the second word in the expression.
+
+Otherwise, it is considered a variable.
+
+Here are some examples (assuming function f is defined for self): 
+
+	f(x)          # (self f x)
+	obj.f(x)      # (obj f x)
+	f x           # (self f x)
+	3 + obj f x   # (3 + (obj (self f x)))
+	3 + (obj f x) # (3 + (obj f x))
+	3 + obj.f(x)  # (3 + (obj f x))
+	obj + x       # (obj + x)
+	println x     # (Global println x)
+
+If you write (3 + obj f x), the compiler should check to see if f is a function in obj. If so, it says, 
+	Undefined function f in expression "3 + obj (self f x)". (Did you mean 
+	"3 + (obj f x)"?)
+
+
+-----
+
+  *** Special Object Syntax ***
 
 ***Strings and Regular Expressions***
 
@@ -146,23 +180,11 @@ compiles to (hash ("apples" -> 1) ("pears" -> 0) ("grapes" -> 8)).
 
 A function definition looks like this: 
 
-	def f(x, y) { x * y }
+	def f(x y) { x * y }
 
 Every function is a message to an object. If the function is declared outside of a class declaration, it resides within the Global class.
 
 The body of the function must contain exactly one statement. Multiple statements may be packaged together (see "Using Multiple Statements").
-
-A lambda is defined like this: 
-
-	(x, y) => { x * y }
-
-One may assign a function to a variable with 
-
-	my_function = (x, y) => { x * y }
-
-and then call it with
-
-	(call my_function)
 
 Function calls adopt a syntax similar to Lisp. A function call contains first the name of the object, then the name of the function, then the arguments.
 
@@ -173,6 +195,24 @@ If no object name is given, it is assumed to be the object in which the function
 	(f x y) # same as either (self f x y) or (Global f x y)
 
 The second form compiles to the first form during preprocessing.
+
+***Lambdas***
+
+A lambda is defined like this: 
+
+	(x y) => { x * y }
+
+One may assign a function to a variable with 
+
+	my_function = (x y) => { x * y }
+
+and then call it with
+
+	(call my_function)
+
+One may also write a function call that contains underscores instead of variables and it will be parsed as a lambda.
+
+	(3 + _) # same as (x) => { 3 + x }
 
 ***Currying***
 
@@ -325,6 +365,8 @@ Variables are accessed with the get method:
 Alternatively, use a . between the object and the variable name: 
 
 	obj.x
+	
+Calling get on a method will return a reference to the method.
 
 -----
 

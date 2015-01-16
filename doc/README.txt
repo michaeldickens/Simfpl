@@ -1,5 +1,7 @@
 ***File Layout***
 
+bin/: Intermediate LLVM code and executable files.
+
 c/: C libraries for built-in Simfpl functions, which are then compiled into LLVM code.
 
 doc/: Documentation.
@@ -7,8 +9,6 @@ doc/: Documentation.
 example/: Example Simfpl programs.
 
 lib/: The library for the compiler.
-
-llvm/: LLVM code for built-in Simfpl functions.
 
 src/: The compiler source code.
 

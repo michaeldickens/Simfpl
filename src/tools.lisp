@@ -27,9 +27,11 @@
 ;;; entered, the input is returned and no error is thrown.
 (defun make-smp-symbol (name)
   (cond
+	((null name) name)
     ((typep name 'string) (make-instance 'smp-symbol :name name))
 	((typep name 'symbol) (make-smp-symbol (string name)))
     ((typep name 'list) (mapcar #'make-smp-symbol name))
+    ((typep name 'smp-number) (make-smp-symbol (slot-value name 'value)))
     (t name)))
 
 (defun symbol= (sym obj)
@@ -69,6 +71,20 @@
 
 
 ;;;;
+;;;; Definitions for smp-number classes.
+;;;;
+
+(defclass smp-number ()
+  ((value :initarg :value))) ; a string representing the number's value
+
+(defclass smp-integer (smp-number) ())
+
+(defclass smp-float (smp-number) ())
+
+(defmethod print-object ((num smp-number) stream)
+  (format stream "Number<~a>" (slot-value num 'value)))
+
+;;;;
 ;;;; Other definitions.
 ;;;;
 
@@ -80,6 +96,14 @@
   (if (typep klass 'smp-symbol) (setf klass (smp-symbol-to-string klass)))
   (if (typep name 'smp-symbol) (setf name (smp-symbol-to-string name)))
   (concatenate 'string "smp" klass "_" name))
+
+
+(defun write-to-file (filename str)
+  (let ((wfile (open filename
+	  	     :direction :output :if-exists :supersede)))
+    (write-string str wfile)
+    (close wfile)))
+
 
 
 ;;; gen-equalp (short for generic-equalp) is a generic equalp function 

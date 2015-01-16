@@ -13,7 +13,7 @@
 
 ;;; A hash table where the key is a string representing the name of the macro 
 ;;; and the value is the macro itself.
-(defparameter *macros* (make-hash-table :test 'equalp))
+(defparameter *macros* (make-hash-table :test 'equal))
 
 ;;; Where name and arg-names contain smp-symbols.
 (defun make-macro (name arg-names body)
@@ -23,10 +23,20 @@
 
 ;;; This function is called in main.lisp before anything executes.
 (defun init-macros ()
+  ;; dot (.) application. TODO: This should be core syntax, not a macro.
   (make-macro (make-smp-symbol ".") (make-smp-symbol (list "obj" "f" "args")) 
 	      (make-smp-symbol `(("," "obj") ("," "f") ("@" "args"))))
+  ;; AND, OR.
+  (make-macro (make-smp-symbol "and") (make-smp-symbol (list "left" "right"))
+	      (make-smp-symbol `(("if" ("," "left") ("," "right") nil)))) 
+  (make-macro (make-smp-symbol "or") (make-smp-symbol (list "left" "right"))
+          (make-smp-symbol `(("if" ("," "left") ("," "left") ("," "right")))))
+  (make-macro (make-smp-symbol "&&") (make-smp-symbol (list "left" "right"))
+          (make-smp-symbol `(("," "left") "and" ("," "right"))))
+  (make-macro (make-smp-symbol "||") (make-smp-symbol (list "left" "right"))
+          (make-smp-symbol `(("," "left") "or" ("," "right"))))
   ;; I think these macros are sort of pointless because you can just use 
-  ;; (at) or (drop).
+  ;; (at) and (drop).
   (make-macro (make-smp-symbol "caar") (make-smp-symbol `("obj"))
 	      (make-smp-symbol `((("," "obj") "car") "car")))
   (make-macro (make-smp-symbol "cadr") (make-smp-symbol `("obj"))
@@ -94,13 +104,15 @@
   (setf sexp (mapcar #'expand-macros sexp))
   (if (typep (cadr sexp) 'smp-symbol)
     (let ((macro (gethash (smp-symbol-to-string (cadr sexp)) *macros*))
-	  (argc nil))
+	      (argc nil))
       (when macro
+	    ;; Call expand-macro on the macro and its arguments, then cons 
+        ;; the result with the rest of the sexp.
         (setf argc (- (length (slot-value macro 'arg-names)) 1))
-	(return-from expand-macros (expand-macros (cons 
-	  (expand-macro (car sexp) macro 
-	                (butlast (cddr sexp) (- (length (cddr sexp)) argc)))
-	  (nthcdr argc (cddr sexp))))))))
+	    (return-from expand-macros (expand-macros (cons 
+     	  (expand-macro (car sexp) macro 
+	                    (butlast (cddr sexp) (- (length (cddr sexp)) argc)))
+	      (nthcdr argc (cddr sexp))))))))
   (cons (car sexp) (expand-macros (cdr sexp))))
 
 

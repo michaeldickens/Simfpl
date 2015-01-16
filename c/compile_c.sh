@@ -1,1 +1,0 @@
-gcc main.c -O3 -S

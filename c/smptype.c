@@ -97,22 +97,6 @@ Object smpType_equalp(Object obj, int argc, Object argv[])
 	return smp_nil;
 }
 
-Object smpType_gc_mark(Object obj, int argc, Object argv[])
-{
-	minihash_each(obj_core(SmpType, obj).class_funs, 
-			&gc_mark_recursive);
-
-	minihash_each(obj_core(SmpType, obj).class_vars, 
-			&gc_mark_recursive);
-
-	minihash_each(obj_core(SmpType, obj).instance_funs,
-			&gc_mark_recursive);
-	
-	minihash_each(obj_core(SmpType, obj).instance_vars_defaults,
-			&gc_mark_recursive);
-	return smp_nil;
-}
-
 Object smpType_relatedp(Object obj, int argc, Object argv[])
 {
 	SmpType *type1 = &obj_core(SmpType, obj);

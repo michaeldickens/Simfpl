@@ -1,22 +1,25 @@
 ***TODO***
 
 Compiler
- * Change numbers so they never get converted to Lisp numbers. Otherwise, floats may lose precision.
- * Change lambdas so that they are always Global functions.
+ * Change syntax as described in "New Syntax" in "Language Spec.txt".
  * Case statements.
- * When the C library compiles, it writes a file containing all the classes and functions. These are then read in by the Lisp compiler.
+ * When the C library compiles, it writes a file containing all the classes and functions. These are then read in by the Lisp compiler. Or else find a way to vastly simplify object-table.lisp.
  * Write the rest of the keyword macros.
  * Special syntax: %s, %r, etc.
  * Write an optimizer.
+ * Write a code generator that produces C code instead of LLVM and see if it s close to as fast.
+ * Get rid of all those warnings.
 
 
 Simfpl Library
  * Refactor String so that a string can contain any ASCII character (including \0).
+ * Implement return-by-reference (so you can do things like a[0] = 3).
+ * Add generic classes Map, OrderedList(?)
  * Add more functions.
     - Integer: (all GMP number-theoretic functions)
     - Array/List: +, at, concat[!], delete[!], delete_at[!], delete_if[!], drop[!], drop_while[!], each, each_index, index, filter[!], first, flatten[!], flatmap[!], hash, insert[!], join, last, map!, reverse[!], sort[!], take[!], take_while[!], to_a, uniq[!], zip
- * Add classes: Range, Rational
- * Write a Comparator class that defines comparison functions given a cmp() function, like in Ruby.
+ * Add classes: OrderedMap, Set, OrderedSet, Range, Rational, PriorityQueue, Matrix
+ * Write a Comparator class that defines comparison functions given a <= function.
  * Make global variables of objects containing all of the classes.
 
 
@@ -27,9 +30,14 @@ General
 See individual files (search "TODO") for more.
 
 
+To Test
+ * exceptions, returns, breaks
+
 
 ***BUGS***
+ * In "(5 to_s hash)", it parses "hash" as a variable rather than a function.
  * The program does not infer class for a call to a user-defined function.
+ * If Object just contains type and core, the C compiler will split into two values within smpObject_funcall(), causing the Lisp compiler to fail.
  * Because of the way (check-for-return-form) works, if Simfpl calls return(), it will return all the way up the call stack. It should return all the way up the call stack for an exception, but for a return() call, it should catch it in the first function.
  * If a Simfpl keyword has too many arguments, it causes Lisp to fail ("odd number of &KEY arguments").
  * In object-table.lisp, functions in self and Global must be declared, but not any others (I don't think so, anyway).

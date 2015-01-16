@@ -13,7 +13,6 @@ int smpPair_create_class()
 	smpType_def(pair, SCOPE_INSTANCE_DATA, "car", smpFunction_init(&smpPair_car, 1, "Object"));
 	smpType_def(pair, SCOPE_INSTANCE_DATA, "cdr", smpFunction_init(&smpPair_cdr, 1, "Object"));
 	smpType_def(pair, SCOPE_INSTANCE_DATA, "clear", smpFunction_init(&smpPair_clear, 1, "Nil"));
-	smpType_def(pair, SCOPE_INSTANCE_DATA, "gc_mark", smpFunction_init(&smpPair_gc_mark, 1, "Object"));
 	smpType_def(pair, SCOPE_INSTANCE_DATA, "to_s", smpFunction_init(&smpPair_to_s, 1, "String"));
 	smpType_def(pair, SCOPE_INSTANCE_DATA, "write", smpFunction_init(&smpPair_write, 1, "String"));
 	
@@ -34,16 +33,6 @@ Object smpPair_cdr(Object obj, int argc, Object argv[])
 Object smpPair_clear(Object obj, int argc, Object argv[])
 {
 	smp_free(obj_core(SmpPair, obj).cdr);
-	return smp_nil;
-}
-
-Object smpPair_gc_mark(Object obj, int argc, Object argv[])
-{
-	SmpPair core = obj_core(SmpPair, obj);
-	gc_mark_recursive(NULL, core.car);
-	
-	if (core.cdr)
-		gc_mark_recursive(NULL, *core.cdr);
 	return smp_nil;
 }
 

@@ -277,6 +277,7 @@ int test_array_sort()
 	gettimeofday(&tv, NULL);
 	double finish = tv.tv_sec + tv.tv_usec / 1000000.0;
 	printf("time to sort at %f seconds\n", finish - start);
+	return 0;
 }
 
 int list_clear_all(Object list)
@@ -286,6 +287,7 @@ int list_clear_all(Object list)
 	if (core.cdr)
 		list_clear_all(*core.cdr);
 	obj_clear(&list);
+	return 0;
 }
 
 int test_list_sort()
@@ -316,6 +318,7 @@ int test_list_sort()
 	gettimeofday(&tv, NULL);
 	double finish = tv.tv_sec + tv.tv_usec / 1000000.0;
 	printf("time to sort at %f seconds\n", finish - start);
+	return 0;
 }
 
 int test_hash()

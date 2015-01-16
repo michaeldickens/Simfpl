@@ -6,11 +6,6 @@
  *
  */
 
-int gc_mark_recursive(char *key, Object obj)
-{
-	return 0;
-}
-
 /* Having this separate function is kind of pointless because regular 
  * expressions, snprintf, and possibly other things all use malloc(). It works 
  * fine as long as smp_malloc() just calls malloc().

@@ -10,7 +10,7 @@
 
 ;;; Keeps track of the variables currently in scope. Stores the variable as 
 ;;; a Lisp string rather than as a smp-symbol.
-(defparameter *scope-stack* (list (make-hash-table :test 'equalp)))
+(defparameter *scope-stack* (list (make-hash-table :test 'equal)))
 
 ;;; Takes a smp-symbol.
 (defun scope-add (sym &key (value t))
@@ -21,7 +21,7 @@
   (gethash (smp-symbol-to-string sym) (scope-top)))
 
 (defun scope-push ()
-  (setf *scope-stack* (cons (make-hash-table :test 'equalp) *scope-stack*))
+  (setf *scope-stack* (cons (make-hash-table :test 'equal) *scope-stack*))
   (if (cadr *scope-stack*)
     (maphash #'(lambda (k v) (scope-add k :value v)) (cadr *scope-stack*))))
 
@@ -102,10 +102,10 @@
     ;; Create a new Simfpl class.
     (klass (make-instance 'smp-class :name name :parents parents 
 	:abstractp abstractp :finalp finalp
-    :instance-funs (make-hash-table :test 'equalp) 
-    :instance-var-defaults (make-hash-table :test 'equalp)
-    :class-funs (make-hash-table :test 'equalp) 
-    :class-vars (make-hash-table :test 'equalp))))
+    :instance-funs (make-hash-table :test 'equal) 
+    :instance-var-defaults (make-hash-table :test 'equal)
+    :class-funs (make-hash-table :test 'equal) 
+    :class-vars (make-hash-table :test 'equal))))
 
   ;; If parents is not a list, make it into a list.
   (if (not (listp parents)) (setf parents (list parents)))
@@ -177,14 +177,16 @@
 
     (setf smp-object (make-smp-class "Object" nil))
     (make-instance-fun smp-object ";" '(4 "Object" "Object"))
-    (make-instance-fun smp-object "->" '(6 "List" "Same"))
+    (make-instance-fun smp-object "->" '(6 "List" "Object"))
     (make-instance-fun smp-object "==" '(11 "Bool" "Object"))
     (make-instance-fun smp-object "!=" '(11 "Bool" "Object"))
     (make-instance-fun smp-object "&&" '(10 "Bool" "Object"))
     (make-instance-fun smp-object "||" '(9 "Bool" "Object"))
     (make-instance-fun smp-object "and" '(19 "Bool" "Object"))
     (make-instance-fun smp-object "compute-hash" '(19 "Integer"))
-    (make-instance-fun smp-object "cons" '(19 "List" "Same"))
+    (make-instance-fun smp-object "connect" '(19 "List" "Object"))
+    (make-instance-fun smp-object "," '(19 "List" "Object"))
+    (make-instance-fun smp-object "cons" '(19 "List" "Object"))
     (make-instance-fun smp-object "eq" '(19 "Bool" "Object"))
     (make-instance-fun smp-object "eql" '(19 "Bool" "Object"))
     (make-instance-fun smp-object "equalp" '(19 "Bool" "Object"))
@@ -212,7 +214,7 @@
     (make-class-fun smp-global "printf" '(19 "String" "&rest" "Object"))
     (make-class-fun smp-global "println" '(19 "Object"))
     (make-class-fun smp-global "rand" '(19 "Number" "&optional" "Integer"))
-  
+     
     (setf smp-sym (make-smp-class "Symbol" 'object))
     (setf smp-class (make-smp-class "Class" 'object :finalp t))
     (setf smp-collection (make-smp-class "Collection" 'object :abstractp t))
